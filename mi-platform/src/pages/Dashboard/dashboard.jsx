@@ -7,6 +7,7 @@ function Dashboard() {
   const navigate = useNavigate()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [newProjectName, setNewProjectName] = useState('')
+  const [showAll, setShowAll] = useState(false)
 
   const handleLogout = () => {
     navigate('/login')
@@ -46,7 +47,7 @@ function Dashboard() {
           {recentProjects.map((p) => (
             <button key={p.id} className="sidebar-project-btn">{p.name}</button>
           ))}
-          <button className="sidebar-see-all">See All</button>
+          <button className="sidebar-see-all" onClick={() => setShowAll(true)}>See All</button>
         </aside>
 
         {/* Main content */}
@@ -84,6 +85,28 @@ function Dashboard() {
 
         </main>
       </div>
+
+      {/* See All overlay */}
+      {showAll && (
+        <div className="overlay">
+          <div className="overlay-header">
+            <h2 className="overlay-title">All Projects</h2>
+            <button className="overlay-close" onClick={() => setShowAll(false)}>✕</button>
+          </div>
+          <div className="overlay-body">
+            {semesterProjects.map((group) => (
+              <div key={group.semester} className="semester-group">
+                <p className="semester-label">{group.semester}</p>
+                <div className="semester-projects">
+                  {group.projects.map((p) => (
+                    <button key={p.id} className="project-btn">{p.name}</button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
