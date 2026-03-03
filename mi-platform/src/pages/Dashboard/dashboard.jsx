@@ -1,33 +1,12 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { recentProjects, semesterProjects } from '../../data/projects.js'
 import './dashboard.css'
-
-const NAV_ITEMS = [
-  { label: 'Dashboard', icon: '▦', path: '/dashboard' },
-  { label: 'Analytics', icon: '📈', path: '/analytics' },
-  { label: 'Users', icon: '👥', path: '/users' },
-  { label: 'Reports', icon: '📋', path: '/reports' },
-  { label: 'Settings', icon: '⚙', path: '/settings' },
-]
-
-const STAT_CARDS = [
-  { label: 'Total Users', value: '4,281', change: '+12%', positive: true },
-  { label: 'Active Sessions', value: '318', change: '+5%', positive: true },
-  { label: 'Revenue', value: '$24,530', change: '+8.3%', positive: true },
-  { label: 'Bounce Rate', value: '24.7%', change: '-2.1%', positive: false },
-]
-
-const RECENT_ACTIVITY = [
-  { user: 'Alice Martin', action: 'Created a new report', time: '2 min ago' },
-  { user: 'Bob Chen', action: 'Updated user settings', time: '15 min ago' },
-  { user: 'Sarah Kim', action: 'Exported analytics data', time: '1 hr ago' },
-  { user: 'James Rivera', action: 'Added a new team member', time: '3 hr ago' },
-  { user: 'Priya Patel', action: 'Reviewed monthly report', time: '5 hr ago' },
-]
 
 function Dashboard() {
   const navigate = useNavigate()
-  const [activeNav, setActiveNav] = useState('Dashboard')
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [newProjectName, setNewProjectName] = useState('')
 
   const handleLogout = () => {
     navigate('/login')
@@ -35,89 +14,76 @@ function Dashboard() {
 
   return (
     <div className="dashboard-layout">
-      {/* Sidebar */}
-      <aside className="sidebar">
-        <div className="sidebar-logo">CCSE MI Platform</div>
 
-        <nav className="sidebar-nav">
-          {NAV_ITEMS.map((item) => (
-            <button
-              key={item.label}
-              className={`nav-item ${activeNav === item.label ? 'nav-item--active' : ''}`}
-              onClick={() => setActiveNav(item.label)}
-            >
-              <span className="nav-icon">{item.icon}</span>
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </nav>
-
-        <button className="sidebar-logout" onClick={handleLogout}>
-          ⇠ Logout
-        </button>
-      </aside>
-
-      {/* Main content */}
-      <main className="main-content">
-        {/* Top bar */}
-        <header className="topbar">
-          <div>
-            <h1 className="topbar-title">Dashboard</h1>
-            <p className="topbar-date">
-              {new Date().toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
-            </p>
-          </div>
-          <div className="topbar-avatar">A</div>
-        </header>
-
-        {/* Stat cards */}
-        <section className="stats-grid">
-          {STAT_CARDS.map((card) => (
-            <div key={card.label} className="stat-card">
-              <p className="stat-label">{card.label}</p>
-              <p className="stat-value">{card.value}</p>
-              <span className={`stat-change ${card.positive ? 'stat-change--up' : 'stat-change--down'}`}>
-                {card.change} vs last month
-              </span>
+      {/* Top navbar */}
+      <header className="topnav">
+        <span className="topnav-brand">MI Platform</span>
+        <div className="topnav-right">
+          <span className="topnav-bell">🔔</span>
+          <button
+            className="topnav-user"
+            onClick={() => setDropdownOpen((o) => !o)}
+          >
+            <span>Username</span>
+            <span className="topnav-avatar">👤</span>
+          </button>
+          {dropdownOpen && (
+            <div className="dropdown">
+              <div className="dropdown-item dropdown-item--header">Notifications</div>
+              <div className="dropdown-divider" />
+              <div className="dropdown-item dropdown-item--header">Account Details</div>
+              <button className="dropdown-item">⚙ Settings</button>
+              <button className="dropdown-item" onClick={handleLogout}>⇠ Log Out</button>
             </div>
-          ))}
-        </section>
+          )}
+        </div>
+      </header>
 
-        {/* Recent activity */}
-        <section className="activity-section">
-          <h2 className="section-title">Recent Activity</h2>
-          <div className="activity-table-wrapper">
-            <table className="activity-table">
-              <thead>
-                <tr>
-                  <th>User</th>
-                  <th>Action</th>
-                  <th>Time</th>
-                </tr>
-              </thead>
-              <tbody>
-                {RECENT_ACTIVITY.map((row, i) => (
-                  <tr key={i}>
-                    <td>
-                      <div className="user-cell">
-                        <span className="user-avatar">{row.user[0]}</span>
-                        {row.user}
-                      </div>
-                    </td>
-                    <td>{row.action}</td>
-                    <td className="time-cell">{row.time}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </main>
+      <div className="dashboard-body">
+        {/* Left sidebar — recent projects */}
+        <aside className="sidebar">
+          <p className="sidebar-label">Recent</p>
+          {recentProjects.map((p) => (
+            <button key={p.id} className="sidebar-project-btn">{p.name}</button>
+          ))}
+          <button className="sidebar-see-all">See All</button>
+        </aside>
+
+        {/* Main content */}
+        <main className="main-content">
+
+          {/* New project creator */}
+          <section className="new-project-section">
+            <h2 className="section-heading">New Projects</h2>
+            <input
+              className="new-project-input"
+              type="text"
+              placeholder="Project name"
+              value={newProjectName}
+              onChange={(e) => setNewProjectName(e.target.value)}
+            />
+            <button className="create-btn">Create</button>
+          </section>
+
+          {/* Projects list */}
+          <section className="projects-section">
+            <h2 className="section-heading">Projects</h2>
+            <div className="projects-scroll">
+              {semesterProjects.map((group) => (
+                <div key={group.semester} className="semester-group">
+                  <p className="semester-label">{group.semester}</p>
+                  <div className="semester-projects">
+                    {group.projects.map((p) => (
+                      <button key={p.id} className="project-btn">{p.name}</button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+        </main>
+      </div>
     </div>
   )
 }
