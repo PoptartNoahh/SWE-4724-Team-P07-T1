@@ -1,6 +1,9 @@
 import { BrowserRouter, Routes, Route, Link} from "react-router-dom";
 import LoginPage from "./pages/loginPage";
 import Dashboard from "./pages/dashboard";
+import Project from "./pages/Project";
+import Report from "./pages/Report";
+
 function NavBar() {
     return (
         <BrowserRouter>
@@ -12,6 +15,8 @@ function NavBar() {
             <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/projects/:projectId" element={<Project />} />
+                <Route path="/reports/:reportId" element={<Report />} />
             </Routes>
         </BrowserRouter>
     )

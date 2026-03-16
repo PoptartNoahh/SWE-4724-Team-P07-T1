@@ -1,0 +1,149 @@
+.project-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 36px;
+}
+
+.project-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.project-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.upload-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 12px 28px;
+  background: #1a1a2e;
+  color: white;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.upload-btn:hover {
+  background: #0f3460;
+}
+
+.upload-msg {
+  font-size: 14px;
+  color: #22c55e;
+  margin-bottom: 12px;
+}
+
+.latest-meeting-info {
+  display: flex;
+  gap: 24px;
+  align-items: baseline;
+  margin-bottom: 20px;
+  font-size: 15px;
+  color: #6b7280;
+}
+
+.latest-meeting-label {
+  font-weight: 600;
+  color: #1a1a2e;
+  text-decoration: underline;
+}
+
+.project-divider {
+  border: none;
+  height: 3px;
+  background: black;
+  margin-bottom: 28px;
+}
+
+.meeting-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.meeting-card {
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.meeting-card-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 14px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.meeting-id {
+  font-weight: 600;
+  font-size: 15px;
+  color: #1a1a2e;
+}
+
+.meeting-meta {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.meeting-card-body {
+  display: flex;
+  align-items: flex-start;
+  padding: 20px;
+  gap: 24px;
+}
+
+.meeting-details {
+  flex: 1;
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.5;
+}
+
+.section-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a2e;
+  text-decoration: underline;
+  margin-bottom: 6px;
+}
+
+.meeting-risk-col {
+  min-width: 130px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.risk-badge {
+  display: inline-block;
+  padding: 4px 16px;
+  border-radius: 12px;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.view-report-btn {
+  align-self: center;
+  padding: 12px 24px;
+  background: #4b5563;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.view-report-btn:hover {
+  background: #1a1a2e;
+}
