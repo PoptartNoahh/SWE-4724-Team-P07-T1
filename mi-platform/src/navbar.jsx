@@ -3,7 +3,7 @@ import LoginPage from "./pages/loginPage";
 import Dashboard from "./pages/dashboard";
 import Project from "./pages/Project";
 import Report from "./pages/Report";
-
+import Login from "./pages/loginPage";
 function NavBar() {
     return (
         <BrowserRouter>
