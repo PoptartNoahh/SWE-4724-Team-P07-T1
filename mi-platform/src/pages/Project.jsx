@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import Layout from '../components/Layout.jsx'
 import { getProject, getProjectMeetings, uploadProjectFile } from '../services/projectService.js'
 import './Project.css'
 
@@ -55,12 +54,11 @@ function Project() {
   }
 
   if (!project) {
-    return <Layout><p style={{ padding: '60px', textAlign: 'center', color: '#999' }}>Loading...</p></Layout>
+    return <p style={{ padding: '60px', textAlign: 'center', color: '#999' }}>Loading...</p>
   }
 
   return (
-    <Layout>
-      <div className="project-page">
+    <div className="project-page">
 
         <div className="project-header">
           <h1 className="project-title">{project.title}</h1>
@@ -72,11 +70,13 @@ function Project() {
 
         {uploadMsg && <p className="upload-msg">{uploadMsg}</p>}
 
-        <div className="latest-meeting-info">
-          <span className="latest-meeting-label">Latest Meeting Recorded</span>
-          <span>Date: {formatDate(project.latestMeetingAt)}</span>
-          <span>Time: {formatTime(project.latestMeetingAt)}</span>
-        </div>
+        {project.latestMeetingAt && (
+          <div className="latest-meeting-info">
+            <span className="latest-meeting-label">Latest Meeting Recorded</span>
+            <span>Date: {formatDate(project.latestMeetingAt)}</span>
+            <span>Time: {formatTime(project.latestMeetingAt)}</span>
+          </div>
+        )}
 
         <hr className="project-divider" />
 
@@ -110,7 +110,6 @@ function Project() {
           ))}
         </div>
       </div>
-    </Layout>
   )
 }
 
