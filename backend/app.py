@@ -1,17 +1,23 @@
-import pypyodbc as odbc # pip install pypyodbc
+import os
+from dotenv import load_dotenv
+import pyodbc
+load_dotenv()  
+conn = pyodbc.connect(os.getenv("DB_CONN_STR"))
+# conn = pyodbc.connect(
+#     "DRIVER={ODBC Driver 18 for SQL Server};"
+#     f"SERVER={os.getenv('DB_SERVER')};"
+#     f"DATABASE={os.getenv('DB_NAME')};"
+#     f"UID={os.getenv('DB_USER')};"
+#     f"PWD={os.getenv('DB_PASSWORD')};"
+#     "Encrypt=yes;"
+#     "TrustServerCertificate=yes;"
+# )
 
-DRIVER_NAME = 'SQL SERVER'
-SERVER_NAME = 'ccse-mip-server'
-DATABASE_NAME = 'ccse-mip-db'
-
-connection_string = f"""
-    DRIVER={{{DRIVER_NAME}}};
-    SERVER={SERVER_NAME};
-    DATABASE={DATABASE_NAME};
-    Trust_Connection=yes;
-    uid=jsmi1518@students.kennesaw.edu;
-    pwd=MIP-Capstone2026!;
-"""
-
-conn = odbc.connect(connection_string)
-print(conn)
+cursor = conn.cursor()
+cursor.execute("""
+SELECT TABLE_SCHEMA, TABLE_NAME
+FROM INFORMATION_SCHEMA.TABLES
+WHERE TABLE_TYPE = 'BASE TABLE'
+ORDER BY TABLE_SCHEMA, TABLE_NAME;
+""")
+print([row.TABLE_NAME for row in cursor.fetchall()])
