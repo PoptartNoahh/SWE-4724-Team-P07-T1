@@ -1,149 +1,219 @@
-.project-page {
-  max-width: 960px;
+.proj {
+  max-width: 900px;
   margin: 0 auto;
-  padding: 32px 36px;
+  padding: 24px 32px 48px;
 }
 
-.project-header {
+.proj-loading {
+  padding: 60px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 14px;
+}
+
+/* Breadcrumb */
+.proj-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 20px;
+  font-size: 13px;
+}
+
+.proj-breadcrumb-link {
+  background: none;
+  border: none;
+  color: var(--ms-blue);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0;
+}
+
+.proj-breadcrumb-link:hover {
+  text-decoration: underline;
+}
+
+.proj-breadcrumb-sep {
+  color: var(--text-tertiary);
+}
+
+.proj-breadcrumb-current {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Header */
+.proj-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.proj-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.proj-meta {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.proj-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--ksu-black);
+  color: #ffffff;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s;
+  white-space: nowrap;
+}
+
+.proj-upload-btn:hover {
+  background: #333;
+}
+
+.proj-upload-msg {
+  font-size: 13px;
+  color: var(--success);
+  font-weight: 500;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: var(--success-light);
+  border-radius: var(--radius-sm);
+}
+
+/* Meetings */
+.proj-meetings {
+  margin-top: 24px;
+}
+
+.proj-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-primary);
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--ksu-gold);
+}
+
+.proj-empty {
+  color: var(--text-tertiary);
+  font-size: 14px;
+  padding: 20px 0;
+}
+
+.proj-meeting-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Meeting card */
+.mtg-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  transition: box-shadow 0.12s;
+}
+
+.mtg-card:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+.mtg-card-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
 }
 
-.project-title {
-  font-size: 28px;
-  font-weight: 700;
-  color: #1a1a2e;
-}
-
-.upload-btn {
-  display: inline-flex;
+.mtg-card-meta {
+  display: flex;
   align-items: center;
-  padding: 12px 28px;
-  background: #1a1a2e;
-  color: white;
-  border-radius: 8px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-}
-.upload-btn:hover {
-  background: #0f3460;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
 }
 
-.upload-msg {
+.mtg-date {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.mtg-dot {
+  color: var(--text-tertiary);
+}
+
+.mtg-duration {
+  color: var(--text-secondary);
+}
+
+/* Risk badges */
+.mtg-risk-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.risk--high {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.risk--moderate {
+  background: var(--warning-light);
+  color: #8a6d00;
+}
+
+.risk--low {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.mtg-details {
   font-size: 14px;
-  color: #22c55e;
+  color: var(--text-secondary);
+  line-height: 1.55;
   margin-bottom: 12px;
 }
 
-.latest-meeting-info {
+.mtg-card-actions {
   display: flex;
-  gap: 24px;
-  align-items: baseline;
-  margin-bottom: 20px;
-  font-size: 15px;
-  color: #6b7280;
+  justify-content: flex-end;
 }
 
-.latest-meeting-label {
-  font-weight: 600;
-  color: #1a1a2e;
-  text-decoration: underline;
-}
-
-.project-divider {
-  border: none;
-  height: 3px;
-  background: black;
-  margin-bottom: 28px;
-}
-
-.meeting-list {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.meeting-card {
-  background: white;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.meeting-card-header {
-  display: flex;
+.mtg-view-btn {
+  display: inline-flex;
   align-items: center;
-  gap: 20px;
-  padding: 14px 20px;
-  border-bottom: 1px solid #e5e7eb;
-  background: #f9fafb;
-}
-
-.meeting-id {
-  font-weight: 600;
-  font-size: 15px;
-  color: #1a1a2e;
-}
-
-.meeting-meta {
-  font-size: 14px;
-  color: #6b7280;
-}
-
-.meeting-card-body {
-  display: flex;
-  align-items: flex-start;
-  padding: 20px;
-  gap: 24px;
-}
-
-.meeting-details {
-  flex: 1;
-  font-size: 14px;
-  color: #374151;
-  line-height: 1.5;
-}
-
-.section-label {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1a1a2e;
-  text-decoration: underline;
-  margin-bottom: 6px;
-}
-
-.meeting-risk-col {
-  min-width: 130px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.risk-badge {
-  display: inline-block;
-  padding: 4px 16px;
-  border-radius: 12px;
-  color: white;
+  gap: 4px;
+  padding: 6px 14px;
+  background: none;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
   font-size: 13px;
   font-weight: 600;
+  color: var(--ms-blue);
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
 }
 
-.view-report-btn {
-  align-self: center;
-  padding: 12px 24px;
-  background: #4b5563;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.view-report-btn:hover {
-  background: #1a1a2e;
+.mtg-view-btn:hover {
+  background: var(--surface-secondary);
+  border-color: var(--ms-blue);
 }
