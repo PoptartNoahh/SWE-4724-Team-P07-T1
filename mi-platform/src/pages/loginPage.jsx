@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './loginPage.css'
+import { loginUser } from '../services/authService'
 
 function loginPage() {
   const navigate = useNavigate()
-  const [form, setForm] = useState({ email: '', password: '' })
+  const [form, setForm] = useState({ identifier: '', password: '' })
   const [error, setError] = useState('')
 
   const handleChange = (e) => {
@@ -13,11 +14,18 @@ function loginPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!form.email || !form.password) {
+    if (!form.identifier || !form.password) {
       setError('Please fill in all fields.')
       return
     }
-    // Replace with real auth logic
+
+    const result = loginUser(form)
+    if (!result.ok) {
+      setError(result.error)
+      return
+    }
+
+    setError('')
     navigate('/dashboard')
   }
 
@@ -31,13 +39,13 @@ function loginPage() {
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="identifier">Email or Username</label>
             <input
-              id="email"
-              type="email"
-              name="email"
-              placeholder="you@example.com"
-              value={form.email}
+              id="identifier"
+              type="text"
+              name="identifier"
+              placeholder="you@example.com or username"
+              value={form.identifier}
               onChange={handleChange}
             />
           </div>

@@ -1,0 +1,74 @@
+{
+  "users": [
+    {
+      "user_id": "U001",
+      "first_name": "Calvin",
+      "last_name": "Crose",
+      "email": "ccrose1@students.kennesaw.edu",
+      "role": "User",
+      "department": "Software Engineering",
+      "is_active": true,
+      "created_at": "2026-01-10T09:30:00Z",
+      "login": {
+        "username": "ccrose1",
+        "password": "TempPass123"
+      }
+    },
+    {
+      "user_id": "U002",
+      "first_name": "Jaeden",
+      "last_name": "Jones",
+      "email": "jjone836@students.kennesaw.edu",
+      "role": "User",
+      "department": "Software Engineering",
+      "is_active": true,
+      "created_at": "2026-01-12T14:15:00Z",
+      "login": {
+        "username": "jjone836",
+        "password": "TempPass123"
+      }
+    },
+    {
+      "user_id": "U003",
+      "first_name": "Jonah",
+      "last_name": "Smith",
+      "email": "jsmi1518@students.kennesaw.edu",
+      "role": "User",
+      "department": "Software Engineering",
+      "is_active": true,
+      "created_at": "2026-01-14T11:45:00Z",
+      "login": {
+        "username": "jsmi1518",
+        "password": "TempPass123"
+      }
+    },
+    {
+      "user_id": "U004",
+      "first_name": "Marcus",
+      "last_name": "Johnson",
+      "email": "mjohn628@students.kennesaw.edu",
+      "role": "User",
+      "department": "Software Engineering",
+      "is_active": true,
+      "created_at": "2026-01-16T08:00:00Z",
+      "login": {
+        "username": "mjohn628",
+        "password": "TempPass123"
+      }
+    },
+    {
+      "user_id": "U005",
+      "first_name": "Noah",
+      "last_name": "Enyart",
+      "email": "noah.enyart@students.kennesaw.edu",
+      "role": "User",
+      "department": "Software Engineering",
+      "is_active": true,
+      "created_at": "2026-01-18T10:00:00Z",
+      "login": {
+        "username": "noah.enyart",
+        "password": "TempPass123"
+      }
+    }
+  ]
+}
