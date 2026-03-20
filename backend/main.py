@@ -208,17 +208,15 @@ def list_projects() -> List[Dict[str, Any]]:
 
 @app.get("/api/projects/{project_id}")
 def get_project(project_id: str) -> Dict[str, Any]:
-    # TODO (Azure DB): Replace lookups with Azure DB query.
+    # TODO (Azure DB): Replace lookups with Azure DB query
     #
-    # IMPORTANT: A project should be able to exist without any meetings/reports.
-    # If it's listed in `dashboard_projects`, it should be considered a valid project.
+    # Projects should be able to exist without any meetings/reports.
     project: Optional[Dict[str, Any]] = projects.get(project_id)
     if project:
         return project
 
     dash = _find_dashboard_project(project_id)
     if dash:
-        # Minimal shape expected by the frontend. `latestMeetingAt` may be missing when no meetings exist.
         return {"id": dash["id"], "title": dash.get("name", f"Project {dash['id']}")}
 
     raise HTTPException(status_code=404, detail="Project not found")
@@ -260,8 +258,7 @@ def update_flag_status(flag_id: str, payload: FlagUpdateRequest) -> Dict[str, An
 
 @app.post("/api/reports/{report_id}/email")
 def email_report(report_id: str) -> Dict[str, Any]:
-    # TODO (Azure DB + Email service): Send the report via an email provider (e.g., SendGrid)
-    # and track delivery status in Azure DB.
+    # Potential email service usage:
     _ = report_id
     return {"success": True}
 
