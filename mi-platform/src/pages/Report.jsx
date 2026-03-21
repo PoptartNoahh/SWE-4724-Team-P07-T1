@@ -41,24 +41,11 @@ function Report() {
   }
 
   if (!report) {
-    return <p style={{ padding: '60px', textAlign: 'center', color: '#999' }}>Loading...</p>
+    return <div className="rpt-loading">Loading report&hellip;</div>
   }
 
-  return (
-    <div className="report-page">
-
-        <div className="report-header">
-          <span className="report-id">ID: {report.id}</span>
-          <button
-            className="email-btn"
-            onClick={handleEmail}
-            disabled={emailing || emailSent}
-          >
-            {emailSent ? '✓ Sent' : emailing ? 'Sending...' : '✉ Email Report'}
-          </button>
-        </div>
-
-        <hr className="report-divider" />
+  const pendingCount = report.risks.filter(r => r.status === 'pending').length
+  const confirmedCount = report.risks.filter(r => r.status === 'confirmed').length
 
         <div className="report-section">
           <h2 className="report-section-title">Identified Risks</h2>
@@ -93,6 +80,18 @@ function Report() {
             <p>{report.details}</p>
           </div>
         </div>
+        <button
+          className="rpt-email-btn"
+          onClick={handleEmail}
+          disabled={emailing || emailSent}
+        >
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <rect x="1" y="3" width="14" height="10" rx="2"/>
+            <path d="M1 5l7 4 7-4"/>
+          </svg>
+          {emailSent ? 'Sent' : emailing ? 'Sending...' : 'Email Report'}
+        </button>
+      </div>
 
         <div className="report-section">
           <h2 className="report-section-title">Reference Points</h2>
@@ -115,12 +114,29 @@ function Report() {
               ))
             )}
           </div>
-        </div>
+        )}
+      </section>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
-          <button className="exit-btn" onClick={() => navigate(-1)}>Exit</button>
+      {/* Details */}
+      <section className="rpt-section">
+        <h2 className="rpt-section-title">Meeting Summary</h2>
+        <div className="rpt-details-box">
+          {report.details}
         </div>
+      </section>
 
+      {/* References */}
+      <section className="rpt-section">
+        <h2 className="rpt-section-title">Transcript References</h2>
+        <div className="rpt-ref-list">
+          {report.references.map((ref, i) => (
+            <div key={i} className="rpt-ref">
+              <span className="rpt-ref-time">{ref.timestamp}</span>
+              <span className="rpt-ref-text">{ref.text}</span>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   )
 }

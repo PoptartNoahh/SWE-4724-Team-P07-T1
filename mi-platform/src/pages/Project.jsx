@@ -3,6 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { getProject, getProjectReports, uploadProjectFile } from '../services/projectService.js'
 import './Project.css'
 
+const RISK_META = {
+  red:    { label: 'High',     className: 'risk--high' },
+  yellow: { label: 'Moderate', className: 'risk--moderate' },
+  green:  { label: 'Low',      className: 'risk--low' },
+}
+
 function Project() {
   const { projectId } = useParams()
   const navigate = useNavigate()
@@ -19,7 +25,6 @@ function Project() {
   function handleUpload(e) {
     const file = e.target.files[0]
     if (!file) return
-
     setUploading(true)
     setUploadMsg('')
     uploadProjectFile(projectId, file)
@@ -28,22 +33,47 @@ function Project() {
       .finally(() => setUploading(false))
   }
 
+  function fmtDate(d) {
+    return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  }
+
+  function fmtTime(d) {
+    return new Date(d).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  }
+
   if (!project) {
-    return <p style={{ padding: '60px', textAlign: 'center', color: '#999' }}>Loading...</p>
+    return <div className="proj-loading">Loading project&hellip;</div>
   }
 
   return (
-    <div className="project-page">
+    <div className="proj">
+      {/* Breadcrumb */}
+      <nav className="proj-breadcrumb">
+        <button className="proj-breadcrumb-link" onClick={() => navigate('/')}>Dashboard</button>
+        <span className="proj-breadcrumb-sep">/</span>
+        <span className="proj-breadcrumb-current">{project.title}</span>
+      </nav>
 
-        <div className="project-header">
-          <h1 className="project-title">{project.title}</h1>
-          <label className="upload-btn">
-            {uploading ? 'Uploading...' : 'Upload File Contents'}
-            <input type="file" hidden onChange={handleUpload} disabled={uploading} />
-          </label>
+      {/* Header */}
+      <div className="proj-header">
+        <div>
+          <h1 className="proj-title">{project.title}</h1>
+          {project.latestMeetingAt && (
+            <p className="proj-meta">
+              Latest meeting: {fmtDate(project.latestMeetingAt)} at {fmtTime(project.latestMeetingAt)}
+            </p>
+          )}
         </div>
+        <label className="proj-upload-btn">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6">
+            <path d="M8 10V3m0 0L5 6m3-3l3 3M3 12h10"/>
+          </svg>
+          {uploading ? 'Uploading...' : 'Upload File'}
+          <input type="file" hidden onChange={handleUpload} disabled={uploading} />
+        </label>
+      </div>
 
-        {uploadMsg && <p className="upload-msg">{uploadMsg}</p>}
+      {uploadMsg && <div className="proj-upload-msg">{uploadMsg}</div>}
 
         <hr className="project-divider" />
 
@@ -65,10 +95,11 @@ function Project() {
                   View Report
                 </button>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
-      </div>
+      </section>
+    </div>
   )
 }
 
