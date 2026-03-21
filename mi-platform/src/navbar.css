@@ -5,14 +5,12 @@
   overflow: hidden;
 }
 
-/* Thin gold accent stripe at the very top — KSU brand */
 .ksu-accent-bar {
   height: 3px;
   flex-shrink: 0;
   background: var(--ksu-gold);
 }
 
-/* Main header bar */
 .app-topbar {
   height: 48px;
   flex-shrink: 0;
@@ -78,7 +76,6 @@
   color: var(--ksu-gold);
 }
 
-/* Right side controls */
 .app-topbar-right {
   display: flex;
   align-items: center;
@@ -154,7 +151,6 @@
   font-weight: 500;
 }
 
-/* Dropdown menu */
 .menu {
   position: absolute;
   right: 0;
@@ -207,10 +203,11 @@
   background: var(--surface-secondary);
 }
 
-/* Main content area */
 .app-content {
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: var(--bg);
 }

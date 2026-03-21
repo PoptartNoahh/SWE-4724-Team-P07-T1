@@ -3,6 +3,30 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { getProject, getProjectReports, uploadProjectFile } from '../services/projectService.js'
 import './Project.css'
 
+/** Risk score: 0 = none, 1 = low, 2 = moderate, 3 = high */
+const RISK_SCORE_META = {
+  0: { label: 'No risk', className: 'risk--none' },
+  1: { label: 'Low risk', className: 'risk--low' },
+  2: { label: 'Moderate risk', className: 'risk--moderate' },
+  3: { label: 'High risk', className: 'risk--high' },
+}
+
+function clampRiskScore(raw) {
+  const n = Number(raw)
+  if (!Number.isFinite(n)) return 0
+  return Math.max(0, Math.min(3, Math.round(n)))
+}
+
+function normalizeProjectReport(r) {
+  const id = r.id
+  const riskScore = clampRiskScore(
+    r.riskScore ?? r.report_risk_score ?? r.risk_score,
+  )
+  const reportDate = r.reportDate ?? r.report_date ?? r.date ?? null
+  const description = (r.description ?? r.report_description ?? '').trim()
+  return { id, riskScore, reportDate, description }
+}
+
 function Project() {
   const { projectId } = useParams()
   const navigate = useNavigate()
@@ -13,7 +37,7 @@ function Project() {
 
   useEffect(() => {
     getProject(projectId).then(setProject)
-    getProjectReports(projectId).then(setReports)
+    getProjectReports(projectId).then((list) => setReports((list || []).map(normalizeProjectReport)))
   }, [projectId])
 
   function handleUpload(e) {
@@ -71,27 +95,46 @@ function Project() {
 
       <hr className="project-divider" />
 
-      <div className="meeting-list">
-        {reports.length === 0 && (
-          <p style={{ textAlign: 'center', color: '#888', padding: '40px' }}>No reports linked to this project yet.</p>
-        )}
-        {reports.map((report) => (
-          <div key={report.id} className="meeting-card">
-            <div className="meeting-card-header">
-              <span className="meeting-id">Report ID: {report.id}</span>
-            </div>
-            <div className="meeting-card-body">
-              <div className="meeting-details">
-                <h4 className="section-label">Linked Report</h4>
-                <p>This report is linked to the current project.</p>
+      <section className="proj-meetings">
+        <h2 className="proj-section-title">Reports</h2>
+        {reports.length === 0 && <p className="proj-empty">No reports linked to this project yet.</p>}
+        <div className="proj-meeting-list">
+          {reports.map((report) => {
+            const meta = RISK_SCORE_META[report.riskScore] ?? RISK_SCORE_META[0]
+            const dateLabel = report.reportDate ? fmtDate(report.reportDate) : null
+            return (
+            <div key={report.id} className="mtg-card">
+              <div className="mtg-card-top">
+                <div className="mtg-card-meta">
+                  {dateLabel && (
+                    <>
+                      <span className="mtg-date">{dateLabel}</span>
+                      <span className="mtg-dot">&middot;</span>
+                    </>
+                  )}
+                  <span className="mtg-duration">Report #{report.id}</span>
+                </div>
+                <span className={`mtg-risk-badge ${meta.className}`}>{meta.label}</span>
               </div>
-              <button type="button" className="view-report-btn" onClick={() => navigate(`/reports/${report.id}`)}>
-                View Report
-              </button>
+              <div className="mtg-summary-block">
+                <h3 className="mtg-summary-title">Summary</h3>
+                <p className="mtg-details">
+                  {report.description || 'No description available for this report.'}
+                </p>
+              </div>
+              <div className="mtg-card-actions">
+                <button type="button" className="mtg-view-btn" onClick={() => navigate(`/reports/${report.id}`)}>
+                  View Report
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M5 3l4 4-4 4" />
+                  </svg>
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+            )
+          })}
+        </div>
+      </section>
     </div>
   )
 }

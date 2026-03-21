@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, NavLink, useLocation, useNavigate } from 
 import { useMemo, useState, useRef, useEffect } from 'react'
 import './navbar.css'
 
+import Layout from './Layout'
 import LoginPage from './pages/loginPage'
 import Dashboard from './pages/dashboard'
 import Project from './pages/Project'
@@ -55,11 +56,11 @@ function TopBar() {
             <>
               <button className="icon-btn" type="button" aria-label="Notifications">
                 <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <path d="M10 2a5 5 0 0 0-5 5v3l-1.5 2.5h13L15 10V7a5 5 0 0 0-5-5z"/>
-                  <path d="M8 16a2 2 0 1 0 4 0"/>
+                  <path d="M10 2a5 5 0 0 0-5 5v3l-1.5 2.5h13L15 10V7a5 5 0 0 0-5-5z" />
+                  <path d="M8 16a2 2 0 1 0 4 0" />
                 </svg>
               </button>
-              <button className="user-btn" type="button" onClick={() => setMenuOpen(o => !o)}>
+              <button className="user-btn" type="button" onClick={() => setMenuOpen((o) => !o)}>
                 <span className="user-avatar">{user.name.charAt(0)}</span>
                 <span className="user-meta">
                   <span className="user-name">{user.name}</span>
@@ -87,23 +88,25 @@ function TopBar() {
 }
 
 function NavBar() {
-    return (
-        <BrowserRouter>
-            <div className="app-shell">
-              <TopBar />
-              <div className="app-content">
-                <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/login" element={<LoginPage />} />
-                    <Route path="/projects/:projectId" element={<Project />} />
-                    <Route path="/projects/new" element={<CreateProject />} />
-                    <Route path="/reports/:reportId" element={<Report />} />
-                </Routes>
-              </div>
-            </div>
-        </BrowserRouter>
-    )
+  return (
+    <BrowserRouter>
+      <div className="app-shell">
+        <TopBar />
+        <div className="app-content">
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/projects/new" element={<CreateProject />} />
+              <Route path="/projects/:projectId" element={<Project />} />
+              <Route path="/reports/:reportId" element={<Report />} />
+            </Routes>
+          </Layout>
+        </div>
+      </div>
+    </BrowserRouter>
+  )
 }
 
 export default NavBar

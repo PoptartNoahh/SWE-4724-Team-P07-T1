@@ -4,7 +4,6 @@
   padding: 28px 32px 48px;
 }
 
-/* Header */
 .dash-header {
   margin-bottom: 28px;
 }
@@ -21,7 +20,6 @@
   color: var(--text-secondary);
 }
 
-/* Section labels */
 .dash-section-label {
   font-size: 14px;
   font-weight: 700;
@@ -31,7 +29,6 @@
   margin-bottom: 12px;
 }
 
-/* Quick-access cards */
 .dash-quick {
   margin-bottom: 32px;
 }
@@ -78,7 +75,26 @@
   line-height: 1.3;
 }
 
-/* Projects section */
+.dash-new {
+  margin-bottom: 32px;
+}
+
+.dash-create-btn {
+  padding: 10px 20px;
+  background: var(--ksu-black);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.dash-create-btn:hover {
+  background: #333333;
+}
+
 .dash-projects-header {
   display: flex;
   align-items: flex-end;

@@ -116,30 +116,30 @@ function Dashboard() {
         </div>
       </section>
 
-      <section className="new-project-section">
-        <h2 className="section-heading">New Projects</h2>
-        <button type="button" className="create-btn" onClick={() => navigate('/projects/new')}>
-          Create
+      <section className="dash-new">
+        <h2 className="dash-section-label">New Project</h2>
+        <button type="button" className="dash-create-btn" onClick={() => navigate('/projects/new')}>
+          Create project
         </button>
       </section>
 
-      <section className="projects-section">
-        <div className="projects-header-row">
-          <h2 className="section-heading">Projects</h2>
-          <div className="semester-filter-wrap">
-            <label htmlFor="semester-filter" className="semester-filter-label">
+      <section className="dash-projects">
+        <div className="dash-projects-header">
+          <h2 className="dash-section-label">All Projects</h2>
+          <div className="dash-filter">
+            <label htmlFor="sem-filter" className="dash-filter-label">
               Semester
             </label>
             <select
-              id="semester-filter"
-              className="semester-filter-select"
+              id="sem-filter"
+              className="dash-filter-select"
               value={selectedSemester}
               onChange={(e) => setSelectedSemester(e.target.value)}
             >
               <option value="all">All semesters</option>
-              {sortedSemesterProjects.map((group) => (
-                <option key={group.semester} value={group.semester}>
-                  {group.semester}
+              {sortedSemesterProjects.map((g) => (
+                <option key={g.semester} value={g.semester}>
+                  {g.semester}
                 </option>
               ))}
             </select>
@@ -147,39 +147,52 @@ function Dashboard() {
         </div>
 
         {loadError && (
-          <div
-            style={{
-              background: '#fff7ed',
-              border: '1px solid #fed7aa',
-              color: '#9a3412',
-              padding: '12px 14px',
-              borderRadius: '12px',
-              fontWeight: 700,
-              marginBottom: '12px',
-            }}
-          >
+          <div className="dash-error">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="var(--danger)" style={{ flexShrink: 0 }}>
+              <circle cx="8" cy="8" r="7" fill="none" stroke="var(--danger)" strokeWidth="1.5" />
+              <path d="M8 4v5M8 11v1" stroke="var(--danger)" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
             {loadError}
           </div>
         )}
 
-        <div className="projects-scroll">
-          {!loadError && filteredSemesterProjects.length === 0 && (
-            <p style={{ color: '#6b7280', fontWeight: 700, margin: 0 }}>
-              No projects returned from the backend yet.
-            </p>
-          )}
+        <div className="dash-projects-list">
+          {!loadError && filteredSemesterProjects.length === 0 && <p className="dash-empty">No projects found.</p>}
           {filteredSemesterProjects.map((group) => (
-            <div key={group.semester} className="semester-group">
-              <p className="semester-label">{group.semester}</p>
-              <div className="semester-projects">
+            <div key={group.semester} className="dash-semester-group">
+              <div className="dash-semester-label">{group.semester}</div>
+              <div className="dash-semester-items">
                 {group.projects.map((p) => (
                   <button
                     key={p.id}
                     type="button"
-                    className="project-btn"
+                    className="dash-project-row"
                     onClick={() => navigate(`/projects/${p.id}`)}
                   >
-                    {p.name}
+                    <svg
+                      className="dash-project-icon"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke="var(--text-tertiary)"
+                      strokeWidth="1.4"
+                    >
+                      <rect x="2" y="2" width="12" height="12" rx="2" />
+                      <path d="M5 5h6M5 8h3" />
+                    </svg>
+                    <span className="dash-project-name">{p.name}</span>
+                    <svg
+                      className="dash-project-arrow"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 14 14"
+                      fill="none"
+                      stroke="var(--text-tertiary)"
+                      strokeWidth="1.5"
+                    >
+                      <path d="M5 3l4 4-4 4" />
+                    </svg>
                   </button>
                 ))}
               </div>

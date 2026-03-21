@@ -209,6 +209,9 @@ reports: Dict[str, Dict[str, Any]] = {
     "rpt-001": {
         "id": "rpt-001",
         "meetingId": "mtg-001",
+        "description": (
+            "Sprint review: API ~60% done; scope creep on notifications and pipeline deadline concerns."
+        ),
         "risks": [
             {
                 "id": "flag-001",
@@ -229,15 +232,32 @@ reports: Dict[str, Dict[str, Any]] = {
             "There were also concerns about hitting the pipeline deadline."
         ),
         "references": [
-            {"timestamp": "03:23", "text": '"I think we should add push notifications too"'},
-            {"timestamp": "12:45", "text": '"I don\'t think we can hit the March 15 deadline"'},
-            {"timestamp": "18:02", "text": '"Let\'s just add it, we can figure out scope later"'},
-            {"timestamp": "31:10", "text": '"We need to talk to the sponsor about the timeline"'},
+            {
+                "timestamp": "03:23",
+                "text": '"I think we should add push notifications too"',
+                "riskId": "flag-001",
+            },
+            {
+                "timestamp": "12:45",
+                "text": '"I don\'t think we can hit the March 15 deadline"',
+                "riskId": "flag-002",
+            },
+            {
+                "timestamp": "18:02",
+                "text": '"Let\'s just add it, we can figure out scope later"',
+                "riskId": "flag-001",
+            },
+            {
+                "timestamp": "31:10",
+                "text": '"We need to talk to the sponsor about the timeline"',
+                "riskId": "flag-002",
+            },
         ],
     },
     "rpt-002": {
         "id": "rpt-002",
         "meetingId": "mtg-002",
+        "description": "Kickoff: roles, scope doc, and task split — no risks flagged.",
         "risks": [],
         "details": (
             "Normal kickoff meeting. Went over the scope doc, talked about roles, handed out tasks. "
@@ -251,6 +271,7 @@ reports: Dict[str, Dict[str, Any]] = {
     "rpt-003": {
         "id": "rpt-003",
         "meetingId": "mtg-003",
+        "description": "Architecture debate: migration shortcuts, Mongo vs SQL, and Power Automate blocked by IT.",
         "risks": [
             {
                 "id": "flag-003",
@@ -277,15 +298,32 @@ reports: Dict[str, Dict[str, Any]] = {
             "which is holding things up."
         ),
         "references": [
-            {"timestamp": "05:15", "text": '"Can we just skip the migration and write to the new schema?"'},
-            {"timestamp": "14:40", "text": '"What if we just use MongoDB instead?"'},
-            {"timestamp": "28:55", "text": '"Power Automate is completely blocked right now"'},
-            {"timestamp": "42:30", "text": '"We might need a manual upload fallback"'},
+            {
+                "timestamp": "05:15",
+                "text": '"Can we just skip the migration and write to the new schema?"',
+                "riskId": "flag-003",
+            },
+            {
+                "timestamp": "14:40",
+                "text": '"What if we just use MongoDB instead?"',
+                "riskId": "flag-004",
+            },
+            {
+                "timestamp": "28:55",
+                "text": '"Power Automate is completely blocked right now"',
+                "riskId": "flag-005",
+            },
+            {
+                "timestamp": "42:30",
+                "text": '"We might need a manual upload fallback"',
+                "riskId": "flag-005",
+            },
         ],
     },
     "rpt-004": {
         "id": "rpt-004",
         "meetingId": "mtg-004",
+        "description": "Weekly sync on mockups and testing — on track.",
         "risks": [],
         "details": "Quick weekly sync. Looked at mockups, talked testing. Everything on track, nothing flagged.",
         "references": [
@@ -478,13 +516,13 @@ def _fetch_risks_for_report(cursor: Any, report_id: str) -> Tuple[List[Dict[str,
     """
     risk_table = _resolve_risk_table(cursor)
     if not risk_table:
-        return []
+        return [], []
 
     cols = set(_get_table_column_names(cursor, risk_table))
     rid_col = "risk_id" if "risk_id" in cols else ("id" if "id" in cols else None)
     rep_col = "report_id" if "report_id" in cols else None
     if not rid_col or not rep_col:
-        return []
+        return [], []
 
     flag_col = "flag_type" if "flag_type" in cols else None
     excerpt_col = "transcript_excerpt" if "transcript_excerpt" in cols else None
@@ -618,6 +656,80 @@ def get_advisors_from_db() -> List[Dict[str, Any]]:
         conn.close()
 
 
+def _first_present_column(columns: set, candidates: Tuple[str, ...]) -> Optional[str]:
+    for c in candidates:
+        if c in columns:
+            return c
+    return None
+
+
+def _normalize_risk_score_value(raw: Any) -> int:
+    """Map DB value to UI risk score 0 (none) – 3 (high)."""
+    if raw is None:
+        return 0
+    if isinstance(raw, (int, float)) and not isinstance(raw, bool):
+        try:
+            return max(0, min(3, int(raw)))
+        except (TypeError, ValueError):
+            pass
+    s = str(raw).strip().lower()
+    mapping = {
+        "0": 0,
+        "none": 0,
+        "no_risk": 0,
+        "norisk": 0,
+        "1": 1,
+        "low": 1,
+        "green": 1,
+        "2": 2,
+        "moderate": 2,
+        "medium": 2,
+        "yellow": 2,
+        "3": 3,
+        "high": 3,
+        "red": 3,
+    }
+    if s in mapping:
+        return mapping[s]
+    try:
+        return max(0, min(3, int(float(s))))
+    except ValueError:
+        return 0
+
+
+def _iso_date_maybe(val: Any) -> Optional[str]:
+    if val is None:
+        return None
+    if hasattr(val, "isoformat"):
+        try:
+            return val.isoformat()
+        except Exception:
+            pass
+    text = str(val).strip()
+    return text or None
+
+
+def _row_to_project_report_summary(row_dict: Dict[str, Any]) -> Dict[str, Any]:
+    rid = row_dict.get("report_id")
+    if rid is None:
+        rid = row_dict.get("id")
+    raw_score = row_dict.get("risk_score")
+    if raw_score is None:
+        raw_score = row_dict.get("report_risk_score")
+    if raw_score is None:
+        raw_score = row_dict.get("risk_level")
+    risk_score = _normalize_risk_score_value(raw_score)
+    report_date = row_dict.get("rdate") or row_dict.get("mdate")
+    out: Dict[str, Any] = {"id": str(rid), "riskScore": risk_score}
+    iso = _iso_date_maybe(report_date)
+    if iso:
+        out["reportDate"] = iso
+    desc_raw = row_dict.get("rdesc")
+    if desc_raw is not None and str(desc_raw).strip():
+        out["description"] = str(desc_raw).strip()
+    return out
+
+
 def get_project_reports_from_db(project_id: int) -> List[Dict[str, Any]]:
     conn = get_db_connection()
     try:
@@ -631,16 +743,40 @@ def get_project_reports_from_db(project_id: int) -> List[Dict[str, Any]]:
         if not report_id_col:
             raise RuntimeError("Reports table is missing a report_id/id column.")
 
+        select_aliases = [f"r.[{report_id_col}] AS report_id"]
+
+        # Prefer report_risk_score (Azure schema) then generic risk_score
+        rs_col = _first_present_column(columns, ("report_risk_score", "risk_score"))
+        rl_col = _first_present_column(columns, ("risk_level",)) if rs_col is None else None
+        if rs_col:
+            select_aliases.append(f"r.[{rs_col}] AS risk_score")
+        elif rl_col:
+            select_aliases.append(f"r.[{rl_col}] AS risk_level")
+
+        date_col_r = _first_present_column(
+            columns,
+            ("report_date", "created_at", "meeting_date", "date"),
+        )
+        if date_col_r:
+            select_aliases.append(f"r.[{date_col_r}] AS rdate")
+
+        desc_col = _first_present_column(
+            columns,
+            ("report_description", "description", "summary", "report_summary"),
+        )
+        if desc_col:
+            select_aliases.append(f"r.[{desc_col}] AS rdesc")
+
+        select_sql = ", ".join(select_aliases)
+
         if "project_id" in columns:
-            cursor.execute(
-                f"""
-                SELECT {report_id_col}
-                FROM {reports_table}
-                WHERE project_id = ?
-                ORDER BY {report_id_col} DESC
-                """,
-                project_id,
-            )
+            sql = f"""
+                SELECT {select_sql}
+                FROM {reports_table} r
+                WHERE r.project_id = ?
+                ORDER BY r.[{report_id_col}] DESC
+                """
+            cursor.execute(sql, project_id)
         elif "meeting_id" in columns:
             meetings_table = _resolve_meetings_table(cursor)
             if not meetings_table:
@@ -653,21 +789,37 @@ def get_project_reports_from_db(project_id: int) -> List[Dict[str, Any]]:
             if not meeting_id_col:
                 raise RuntimeError("Meetings table is missing meeting_id/id column for report linkage.")
 
-            cursor.execute(
-                f"""
-                SELECT r.{report_id_col}
+            m_date_col = _first_present_column(
+                meeting_cols,
+                ("meeting_date", "start_time", "date", "created_at"),
+            )
+            join_select = list(select_aliases)
+            if m_date_col:
+                join_select.append(f"m.[{m_date_col}] AS mdate")
+            select_sql_join = ", ".join(join_select)
+
+            sql = f"""
+                SELECT {select_sql_join}
                 FROM {reports_table} r
                 INNER JOIN {meetings_table} m
-                    ON r.meeting_id = m.{meeting_id_col}
+                    ON r.[meeting_id] = m.[{meeting_id_col}]
                 WHERE m.project_id = ?
-                ORDER BY r.{report_id_col} DESC
-                """,
-                project_id,
-            )
+                ORDER BY r.[{report_id_col}] DESC
+                """
+            cursor.execute(sql, project_id)
         else:
             raise RuntimeError("Reports table has neither project_id nor meeting_id linkage columns.")
 
-        return [{"id": str(r[0])} for r in cursor.fetchall()]
+        fetched = cursor.fetchall()
+        desc = cursor.description
+        if not desc:
+            return []
+        names = [str(d[0]).lower() for d in desc]
+        out: List[Dict[str, Any]] = []
+        for row in fetched:
+            row_dict = dict(zip(names, row))
+            out.append(_row_to_project_report_summary(row_dict))
+        return out
     finally:
         conn.close()
 
@@ -849,26 +1001,41 @@ def get_report(report_id: str) -> Dict[str, Any]:
         if not report_id_col:
             raise RuntimeError("Reports table is missing report_id/id column.")
 
-        details_col = (
-            "report_description"
-            if "report_description" in columns
-            else ("details" if "details" in columns else None)
-        )
-        if details_col:
+        has_long = "details" in columns
+        has_short = "report_description" in columns
+        if has_long and has_short:
             cursor.execute(
                 f"""
-                SELECT {report_id_col}, {details_col}
+                SELECT r.[{report_id_col}], r.[report_description], r.[details]
+                FROM {reports_table} r
+                WHERE r.[{report_id_col}] = ?
+                """,
+                report_id,
+            )
+        elif has_long:
+            cursor.execute(
+                f"""
+                SELECT [{report_id_col}], [details]
                 FROM {reports_table}
-                WHERE {report_id_col} = ?
+                WHERE [{report_id_col}] = ?
+                """,
+                report_id,
+            )
+        elif has_short:
+            cursor.execute(
+                f"""
+                SELECT [{report_id_col}], [report_description]
+                FROM {reports_table}
+                WHERE [{report_id_col}] = ?
                 """,
                 report_id,
             )
         else:
             cursor.execute(
                 f"""
-                SELECT {report_id_col}
+                SELECT [{report_id_col}]
                 FROM {reports_table}
-                WHERE {report_id_col} = ?
+                WHERE [{report_id_col}] = ?
                 """,
                 report_id,
             )
@@ -881,14 +1048,28 @@ def get_report(report_id: str) -> Dict[str, Any]:
                 return report
             raise HTTPException(status_code=404, detail="Report not found")
 
-        details_value = str(row[1]) if len(row) > 1 and row[1] is not None else ""
+        description_value = ""
+        details_value = ""
+        if has_long and has_short and row is not None and len(row) > 2:
+            description_value = str(row[1]).strip() if row[1] is not None else ""
+            details_value = str(row[2]).strip() if row[2] is not None else ""
+        elif has_long and row is not None and len(row) > 1:
+            details_value = str(row[1]).strip() if row[1] is not None else ""
+        elif has_short and row is not None and len(row) > 1:
+            v = str(row[1]).strip() if row[1] is not None else ""
+            details_value = v
+            description_value = v
+
         risks, reference_points = _fetch_risks_for_report(cursor, report_id)
-        return {
+        payload: Dict[str, Any] = {
             "id": str(row[0]),
             "risks": risks,
             "details": details_value,
             "references": reference_points,
         }
+        if description_value:
+            payload["description"] = description_value
+        return payload
     finally:
         conn.close()
 

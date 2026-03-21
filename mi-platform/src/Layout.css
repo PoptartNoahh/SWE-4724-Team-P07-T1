@@ -1,0 +1,6 @@
+.layout-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  background: var(--bg);
+}

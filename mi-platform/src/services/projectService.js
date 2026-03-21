@@ -34,7 +34,19 @@ export async function getProjectReports(projectId) {
     return await fetchJson(`/api/projects/${projectId}/reports`)
   } catch (e) {
     const fallbackMeetings = meetings[projectId] || []
-    return fallbackMeetings.map((m) => ({ id: m.reportId }))
+    return fallbackMeetings.map((m) => {
+      const full = reports[m.reportId]
+      const d = full?.details
+      const description =
+        full?.description ??
+        (typeof d === 'string' ? (d.length > 220 ? `${d.slice(0, 220)}…` : d) : '')
+      return {
+        id: m.reportId,
+        riskScore: full?.riskScore ?? 0,
+        reportDate: full?.reportDate ?? m.meetingDate,
+        description,
+      }
+    })
   }
 }
 

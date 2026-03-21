@@ -1,6 +1,6 @@
 :root {
   --ksu-black: #1a1a1a;
-  --ksu-gold: #FFC423;
+  --ksu-gold: #ffc423;
   --ksu-gold-hover: #e6b020;
   --ksu-gold-light: #fff8e6;
 
@@ -28,9 +28,9 @@
   --radius-md: 6px;
   --radius-lg: 8px;
 
-  --shadow-sm: 0 1.6px 3.6px rgba(0,0,0,0.07), 0 0.3px 0.9px rgba(0,0,0,0.05);
-  --shadow-md: 0 3.2px 7.2px rgba(0,0,0,0.08), 0 0.6px 1.8px rgba(0,0,0,0.06);
-  --shadow-lg: 0 6.4px 14.4px rgba(0,0,0,0.10), 0 1.2px 3.6px rgba(0,0,0,0.07);
+  --shadow-sm: 0 1.6px 3.6px rgba(0, 0, 0, 0.07), 0 0.3px 0.9px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 3.2px 7.2px rgba(0, 0, 0, 0.08), 0 0.6px 1.8px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 6.4px 14.4px rgba(0, 0, 0, 0.1), 0 1.2px 3.6px rgba(0, 0, 0, 0.07);
 
   font-family: 'Segoe UI', -apple-system, system-ui, Roboto, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -43,7 +43,9 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
 }
 
@@ -66,7 +68,10 @@ a:hover {
   text-decoration: underline;
 }
 
-button, input, select, textarea {
+button,
+input,
+select,
+textarea {
   font: inherit;
 }
 

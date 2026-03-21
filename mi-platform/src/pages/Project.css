@@ -79,7 +79,7 @@
 }
 
 .proj-upload-btn:hover {
-  background: #333;
+  background: #333333;
 }
 
 .proj-upload-msg {
@@ -92,7 +92,14 @@
   border-radius: var(--radius-sm);
 }
 
-/* Meetings */
+.project-divider {
+  border: none;
+  height: 1px;
+  background: var(--border);
+  margin: 20px 0;
+}
+
+/* Reports / meetings list (shared card UI) */
 .proj-meetings {
   margin-top: 24px;
 }
@@ -120,7 +127,7 @@
   gap: 10px;
 }
 
-/* Meeting card */
+/* Meeting / report card */
 .mtg-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -186,11 +193,29 @@
   color: var(--success);
 }
 
+.risk--none {
+  background: var(--surface-secondary);
+  color: var(--text-tertiary);
+}
+
+.mtg-summary-block {
+  margin-bottom: 12px;
+}
+
+.mtg-summary-title {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+}
+
 .mtg-details {
   font-size: 14px;
   color: var(--text-secondary);
   line-height: 1.55;
-  margin-bottom: 12px;
+  margin: 0 0 12px;
 }
 
 .mtg-card-actions {
