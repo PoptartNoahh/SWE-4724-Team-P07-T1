@@ -60,7 +60,6 @@ function Report() {
 
         <hr className="report-divider" />
 
-        {/* risks section */}
         <div className="report-section">
           <h2 className="report-section-title">Identified Risks</h2>
           {report.risks.length === 0 ? (
@@ -88,7 +87,6 @@ function Report() {
           )}
         </div>
 
-        {/* details section */}
         <div className="report-section">
           <h2 className="report-section-title">Details</h2>
           <div className="details-box">
@@ -96,18 +94,26 @@ function Report() {
           </div>
         </div>
 
-        {/* reference points */}
         <div className="report-section">
           <h2 className="report-section-title">Reference Points</h2>
           <div className="references-box">
-            {report.references.map((ref, i) => (
-              <div key={i} className="ref-row">
-                <span className="ref-num">{String(i + 1).padStart(2, '0')}:</span>
-                <span className="ref-time">Time Stamp: {ref.timestamp}</span>
-                <span> – </span>
-                <span className="ref-text">{ref.text}</span>
-              </div>
-            ))}
+            {(report.references || []).length === 0 ? (
+              <p className="no-risks">None</p>
+            ) : (
+              (report.references || []).map((ref, i) => (
+                <div key={ref.riskId ?? i} className="ref-row">
+                  <span className="ref-num">{String(i + 1).padStart(2, '0')}:</span>
+                  {ref.excerptId ? (
+                    <span className="ref-excerpt-id" title="Excerpt ID">ID: {ref.excerptId}</span>
+                  ) : null}
+                  <span className="ref-time">
+                    {ref.timestamp ? `Time: ${ref.timestamp}` : 'Time: —'}
+                  </span>
+                  <span> – </span>
+                  <span className="ref-text">{ref.text}</span>
+                </div>
+              ))
+            )}
           </div>
         </div>
 

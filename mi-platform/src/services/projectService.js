@@ -29,6 +29,27 @@ export async function getProjectMeetings(projectId) {
   }
 }
 
+export async function getProjectReports(projectId) {
+  try {
+    return await fetchJson(`/api/projects/${projectId}/reports`)
+  } catch (e) {
+    const fallbackMeetings = meetings[projectId] || []
+    return fallbackMeetings.map((m) => ({ id: m.reportId }))
+  }
+}
+
+export async function getAdvisors() {
+  return await fetchJson('/api/advisors')
+}
+
+export async function createProject(payload) {
+  return await fetchJson('/api/projects', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+}
+
 export async function uploadProjectFile(projectId, file) {
   // TODO: wire this to `POST /api/projects/:id/files` once the backend upload endpoint is implemented.
   console.log(`[mock] uploaded ${file.name} to project ${projectId}`)

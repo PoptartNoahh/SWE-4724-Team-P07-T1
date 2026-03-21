@@ -1,19 +1,19 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getProject, getProjectMeetings, uploadProjectFile } from '../services/projectService.js'
+import { getProject, getProjectReports, uploadProjectFile } from '../services/projectService.js'
 import './Project.css'
 
 function Project() {
   const { projectId } = useParams()
   const navigate = useNavigate()
   const [project, setProject] = useState(null)
-  const [meetings, setMeetings] = useState([])
+  const [reports, setReports] = useState([])
   const [uploading, setUploading] = useState(false)
   const [uploadMsg, setUploadMsg] = useState('')
 
   useEffect(() => {
     getProject(projectId).then(setProject)
-    getProjectMeetings(projectId).then(setMeetings)
+    getProjectReports(projectId).then(setReports)
   }, [projectId])
 
   function handleUpload(e) {
@@ -26,31 +26,6 @@ function Project() {
       .then(() => setUploadMsg(`Uploaded "${file.name}" successfully.`))
       .catch(() => setUploadMsg('Upload failed.'))
       .finally(() => setUploading(false))
-  }
-
-  function formatDate(dateStr) {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'short', day: 'numeric', year: 'numeric'
-    })
-  }
-
-  function formatTime(dateStr) {
-    return new Date(dateStr).toLocaleTimeString('en-US', {
-      hour: 'numeric', minute: '2-digit'
-    })
-  }
-
-  // risk level color mapping
-  function getRiskColor(level) {
-    if (level === 'red') return '#ef4444'
-    if (level === 'yellow') return '#eab308'
-    return '#22c55e'
-  }
-
-  function getRiskLabel(level) {
-    if (level === 'red') return 'High'
-    if (level === 'yellow') return 'Moderate'
-    return 'None'
   }
 
   if (!project) {
@@ -70,39 +45,23 @@ function Project() {
 
         {uploadMsg && <p className="upload-msg">{uploadMsg}</p>}
 
-        {project.latestMeetingAt && (
-          <div className="latest-meeting-info">
-            <span className="latest-meeting-label">Latest Meeting Recorded</span>
-            <span>Date: {formatDate(project.latestMeetingAt)}</span>
-            <span>Time: {formatTime(project.latestMeetingAt)}</span>
-          </div>
-        )}
-
         <hr className="project-divider" />
 
         <div className="meeting-list">
-          {meetings.length === 0 && (
-            <p style={{ textAlign: 'center', color: '#888', padding: '40px' }}>No meetings recorded yet.</p>
+          {reports.length === 0 && (
+            <p style={{ textAlign: 'center', color: '#888', padding: '40px' }}>No reports linked to this project yet.</p>
           )}
-          {meetings.map((mtg) => (
-            <div key={mtg.id} className="meeting-card">
+          {reports.map((report) => (
+            <div key={report.id} className="meeting-card">
               <div className="meeting-card-header">
-                <span className="meeting-id">ID: {mtg.id}</span>
-                <span className="meeting-meta">{formatDate(mtg.meetingDate)}</span>
-                <span className="meeting-meta">{mtg.duration}</span>
+                <span className="meeting-id">Report ID: {report.id}</span>
               </div>
               <div className="meeting-card-body">
                 <div className="meeting-details">
-                  <h4 className="section-label">Details</h4>
-                  <p>{mtg.details}</p>
+                  <h4 className="section-label">Linked Report</h4>
+                  <p>This report is linked to the current project.</p>
                 </div>
-                <div className="meeting-risk-col">
-                  <h4 className="section-label">Risk Level</h4>
-                  <span className="risk-badge" style={{ background: getRiskColor(mtg.riskLevel) }}>
-                    {getRiskLabel(mtg.riskLevel)}
-                  </span>
-                </div>
-                <button className="view-report-btn" onClick={() => navigate(`/reports/${mtg.reportId}`)}>
+                <button className="view-report-btn" onClick={() => navigate(`/reports/${report.id}`)}>
                   View Report
                 </button>
               </div>

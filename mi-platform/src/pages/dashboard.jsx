@@ -80,7 +80,7 @@ function Dashboard() {
     for (const p of projects) {
       const semester = semesterLabelFromPath(p.path)
       const existing = groups.get(semester) ?? { semester, projects: [] }
-      existing.projects.push({ id: p.id, name: p.path || p.name || `Project ${p.id}` })
+      existing.projects.push({ id: p.id, name: p.name || `Project ${p.id}` })
       groups.set(semester, existing)
     }
     return Array.from(groups.values())
@@ -89,7 +89,7 @@ function Dashboard() {
   const recentProjects = useMemo(() => {
     // Most-recent heuristic: just take the first few returned by backend for now.
     // TODO: backend should return a dedicated "recent" list (or sort by updatedAt).
-    return projects.slice(0, 3).map((p) => ({ id: p.id, name: p.path || p.name || `Project ${p.id}` }))
+    return projects.slice(0, 3).map((p) => ({ id: p.id, name: p.name || `Project ${p.id}` }))
   }, [projects])
 
   const sortedSemesterProjects = useMemo(
@@ -129,7 +129,7 @@ function Dashboard() {
           <section className="new-project-section">
             <h2 className="section-heading">New Projects</h2>
            
-            <button className="create-btn">Create</button>
+            <button className="create-btn" onClick={() => navigate('/projects/new')}>Create</button>
           </section>
 
           {/* Projects list */}

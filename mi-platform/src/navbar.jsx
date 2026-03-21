@@ -6,6 +6,7 @@ import LoginPage from './pages/loginPage'
 import Dashboard from './pages/dashboard'
 import Project from './pages/Project'
 import Report from './pages/Report'
+import CreateProject from './pages/CreateProject'
 
 function TopBar() {
   const navigate = useNavigate()
@@ -77,6 +78,7 @@ function NavBar() {
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/projects/:projectId" element={<Project />} />
+                    <Route path="/projects/new" element={<CreateProject />} />
                     <Route path="/reports/:reportId" element={<Report />} />
                 </Routes>
               </div>
