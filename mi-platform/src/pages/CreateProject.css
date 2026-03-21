@@ -1,0 +1,83 @@
+.create-project-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 32px 16px;
+}
+
+.create-project-card {
+  width: 100%;
+  max-width: 760px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.create-project-card h1 {
+  margin: 0 0 8px;
+}
+
+.create-project-subtitle {
+  margin: 0 0 20px;
+  color: #6b7280;
+}
+
+.create-project-form {
+  display: grid;
+  gap: 14px;
+}
+
+.create-project-form label {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.create-project-form input,
+.create-project-form select,
+.create-project-form textarea {
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+}
+
+.create-project-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-weight: 700;
+}
+
+.create-project-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.secondary-btn,
+.primary-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.secondary-btn {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.primary-btn {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.primary-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}

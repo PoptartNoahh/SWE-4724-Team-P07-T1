@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getProject, getProjectMeetings, uploadProjectFile } from '../services/projectService.js'
+import { getProject, getProjectReports, uploadProjectFile } from '../services/projectService.js'
 import './Project.css'
 
 const RISK_META = {
@@ -13,13 +13,13 @@ function Project() {
   const { projectId } = useParams()
   const navigate = useNavigate()
   const [project, setProject] = useState(null)
-  const [meetings, setMeetings] = useState([])
+  const [reports, setReports] = useState([])
   const [uploading, setUploading] = useState(false)
   const [uploadMsg, setUploadMsg] = useState('')
 
   useEffect(() => {
     getProject(projectId).then(setProject)
-    getProjectMeetings(projectId).then(setMeetings)
+    getProjectReports(projectId).then(setReports)
   }, [projectId])
 
   function handleUpload(e) {
@@ -75,34 +75,25 @@ function Project() {
 
       {uploadMsg && <div className="proj-upload-msg">{uploadMsg}</div>}
 
-      {/* Meeting list */}
-      <section className="proj-meetings">
-        <h2 className="proj-section-title">Meetings</h2>
-        {meetings.length === 0 && (
-          <p className="proj-empty">No meetings recorded yet.</p>
-        )}
-        <div className="proj-meeting-list">
-          {meetings.map(mtg => {
-            const risk = RISK_META[mtg.riskLevel] || RISK_META.green
-            return (
-              <div key={mtg.id} className="mtg-card">
-                <div className="mtg-card-top">
-                  <div className="mtg-card-meta">
-                    <span className="mtg-date">{fmtDate(mtg.meetingDate)}</span>
-                    <span className="mtg-dot">&middot;</span>
-                    <span className="mtg-duration">{mtg.duration}</span>
-                  </div>
-                  <span className={`mtg-risk-badge ${risk.className}`}>{risk.label}</span>
+        <hr className="project-divider" />
+
+        <div className="meeting-list">
+          {reports.length === 0 && (
+            <p style={{ textAlign: 'center', color: '#888', padding: '40px' }}>No reports linked to this project yet.</p>
+          )}
+          {reports.map((report) => (
+            <div key={report.id} className="meeting-card">
+              <div className="meeting-card-header">
+                <span className="meeting-id">Report ID: {report.id}</span>
+              </div>
+              <div className="meeting-card-body">
+                <div className="meeting-details">
+                  <h4 className="section-label">Linked Report</h4>
+                  <p>This report is linked to the current project.</p>
                 </div>
-                <p className="mtg-details">{mtg.details}</p>
-                <div className="mtg-card-actions">
-                  <button className="mtg-view-btn" onClick={() => navigate(`/reports/${mtg.reportId}`)}>
-                    View Report
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <path d="M5 3l4 4-4 4"/>
-                    </svg>
-                  </button>
-                </div>
+                <button className="view-report-btn" onClick={() => navigate(`/reports/${report.id}`)}>
+                  View Report
+                </button>
               </div>
             )
           })}

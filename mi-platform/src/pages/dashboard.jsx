@@ -106,24 +106,73 @@ function Dashboard() {
               <span className="dash-quick-name">{p.name}</span>
             </button>
           ))}
-        </div>
-      </section>
+        </aside>
 
-      {/* Main project listing */}
-      <section className="dash-projects">
-        <div className="dash-projects-header">
-          <h2 className="dash-section-label">All Projects</h2>
-          <div className="dash-filter">
-            <label htmlFor="sem-filter" className="dash-filter-label">Semester</label>
-            <select
-              id="sem-filter"
-              className="dash-filter-select"
-              value={selectedSemester}
-              onChange={e => setSelectedSemester(e.target.value)}
-            >
-              <option value="all">All semesters</option>
-              {sortedSemesterProjects.map(g => (
-                <option key={g.semester} value={g.semester}>{g.semester}</option>
+        {/* Main content */}
+        <main className="main-content">
+
+          {/* New project creator */}
+          <section className="new-project-section">
+            <h2 className="section-heading">New Projects</h2>
+           
+            <button className="create-btn" onClick={() => navigate('/projects/new')}>Create</button>
+          </section>
+
+          {/* Projects list */}
+          <section className="projects-section">
+            <div className="projects-header-row">
+              <h2 className="section-heading">Projects</h2>
+              <div className="semester-filter-wrap">
+                <label htmlFor="semester-filter" className="semester-filter-label">Semester</label>
+                <select
+                  id="semester-filter"
+                  className="semester-filter-select"
+                  value={selectedSemester}
+                  onChange={(e) => setSelectedSemester(e.target.value)}
+                >
+                  <option value="all">All semesters</option>
+                  {sortedSemesterProjects.map((group) => (
+                    <option key={group.semester} value={group.semester}>
+                      {group.semester}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            {loadError && (
+              <div style={{
+                background: '#fff7ed',
+                border: '1px solid #fed7aa',
+                color: '#9a3412',
+                padding: '12px 14px',
+                borderRadius: '12px',
+                fontWeight: 700,
+                marginBottom: '12px'
+              }}>
+                {loadError}
+              </div>
+            )}
+            <div className="projects-scroll">
+              {!loadError && filteredSemesterProjects.length === 0 && (
+                <p style={{ color: '#6b7280', fontWeight: 700, margin: 0 }}>
+                  No projects returned from the backend yet.
+                </p>
+              )}
+              {filteredSemesterProjects.map((group) => (
+                <div key={group.semester} className="semester-group">
+                  <p className="semester-label">{group.semester}</p>
+                  <div className="semester-projects">
+                    {group.projects.map((p) => (
+                          <button
+                            key={p.id}
+                            className="project-btn"
+                            onClick={() => navigate(`/projects/${p.id}`)}
+                          >
+                            {p.name}
+                          </button>
+                    ))}
+                  </div>
+                </div>
               ))}
             </select>
           </div>

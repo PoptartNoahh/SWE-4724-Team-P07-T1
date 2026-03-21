@@ -47,29 +47,37 @@ function Report() {
   const pendingCount = report.risks.filter(r => r.status === 'pending').length
   const confirmedCount = report.risks.filter(r => r.status === 'confirmed').length
 
-  return (
-    <div className="rpt">
-      {/* Breadcrumb */}
-      <nav className="rpt-breadcrumb">
-        <button className="rpt-breadcrumb-link" onClick={() => navigate(-1)}>Back</button>
-        <span className="rpt-breadcrumb-sep">/</span>
-        <span className="rpt-breadcrumb-current">Report {report.id}</span>
-      </nav>
+        <div className="report-section">
+          <h2 className="report-section-title">Identified Risks</h2>
+          {report.risks.length === 0 ? (
+            <p className="no-risks">None</p>
+          ) : (
+            <div className="risk-list">
+              {report.risks.map(risk => (
+                <div key={risk.id} className={`risk-item ${risk.status}`}>
+                  <div className="risk-top">
+                    <span className="risk-type">{risk.flagType}</span>
+                    <span className={`status-tag ${risk.status}`}>
+                      {risk.status === 'pending' ? 'Pending Review' : risk.status === 'confirmed' ? 'Confirmed' : 'Dismissed'}
+                    </span>
+                  </div>
+                  <p className="risk-explanation">{risk.explanation}</p>
+                  {risk.status === 'pending' && (
+                    <div className="risk-actions">
+                      <button className="confirm-btn" onClick={() => handleConfirm(risk.id)}>Confirm</button>
+                      <button className="dismiss-btn" onClick={() => handleDismiss(risk.id)}>Dismiss</button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
-      {/* Header */}
-      <div className="rpt-header">
-        <div>
-          <h1 className="rpt-title">Report {report.id}</h1>
-          <div className="rpt-stats">
-            {report.risks.length > 0 ? (
-              <>
-                <span className="rpt-stat">{report.risks.length} risk{report.risks.length !== 1 ? 's' : ''} identified</span>
-                {pendingCount > 0 && <span className="rpt-stat rpt-stat--warning">{pendingCount} pending review</span>}
-                {confirmedCount > 0 && <span className="rpt-stat rpt-stat--danger">{confirmedCount} confirmed</span>}
-              </>
-            ) : (
-              <span className="rpt-stat rpt-stat--ok">No risks identified</span>
-            )}
+        <div className="report-section">
+          <h2 className="report-section-title">Details</h2>
+          <div className="details-box">
+            <p>{report.details}</p>
           </div>
         </div>
         <button
@@ -85,35 +93,26 @@ function Report() {
         </button>
       </div>
 
-      {/* Risks */}
-      <section className="rpt-section">
-        <h2 className="rpt-section-title">Identified Risks</h2>
-        {report.risks.length === 0 ? (
-          <div className="rpt-no-risks">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--success)" strokeWidth="1.8">
-              <circle cx="10" cy="10" r="8"/><path d="M6 10l3 3 5-5"/>
-            </svg>
-            No risks were flagged for this meeting.
-          </div>
-        ) : (
-          <div className="rpt-risk-list">
-            {report.risks.map(risk => (
-              <div key={risk.id} className={`rpt-risk rpt-risk--${risk.status}`}>
-                <div className="rpt-risk-header">
-                  <span className="rpt-risk-type">{risk.flagType}</span>
-                  <span className={`rpt-status rpt-status--${risk.status}`}>
-                    {risk.status === 'pending' ? 'Pending Review' : risk.status === 'confirmed' ? 'Confirmed' : 'Dismissed'}
+        <div className="report-section">
+          <h2 className="report-section-title">Reference Points</h2>
+          <div className="references-box">
+            {(report.references || []).length === 0 ? (
+              <p className="no-risks">None</p>
+            ) : (
+              (report.references || []).map((ref, i) => (
+                <div key={ref.riskId ?? i} className="ref-row">
+                  <span className="ref-num">{String(i + 1).padStart(2, '0')}:</span>
+                  {ref.excerptId ? (
+                    <span className="ref-excerpt-id" title="Excerpt ID">ID: {ref.excerptId}</span>
+                  ) : null}
+                  <span className="ref-time">
+                    {ref.timestamp ? `Time: ${ref.timestamp}` : 'Time: —'}
                   </span>
+                  <span> – </span>
+                  <span className="ref-text">{ref.text}</span>
                 </div>
-                <p className="rpt-risk-text">{risk.explanation}</p>
-                {risk.status === 'pending' && (
-                  <div className="rpt-risk-actions">
-                    <button className="rpt-btn-confirm" onClick={() => handleConfirm(risk.id)}>Confirm Risk</button>
-                    <button className="rpt-btn-dismiss" onClick={() => handleDismiss(risk.id)}>Dismiss</button>
-                  </div>
-                )}
-              </div>
-            ))}
+              ))
+            )}
           </div>
         )}
       </section>

@@ -6,6 +6,7 @@ import LoginPage from './pages/loginPage'
 import Dashboard from './pages/dashboard'
 import Project from './pages/Project'
 import Report from './pages/Report'
+import CreateProject from './pages/CreateProject'
 
 function TopBar() {
   const navigate = useNavigate()
@@ -86,22 +87,23 @@ function TopBar() {
 }
 
 function NavBar() {
-  return (
-    <BrowserRouter>
-      <div className="app-shell">
-        <TopBar />
-        <div className="app-content">
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/projects/:projectId" element={<Project />} />
-            <Route path="/reports/:reportId" element={<Report />} />
-          </Routes>
-        </div>
-      </div>
-    </BrowserRouter>
-  )
+    return (
+        <BrowserRouter>
+            <div className="app-shell">
+              <TopBar />
+              <div className="app-content">
+                <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/projects/:projectId" element={<Project />} />
+                    <Route path="/projects/new" element={<CreateProject />} />
+                    <Route path="/reports/:reportId" element={<Report />} />
+                </Routes>
+              </div>
+            </div>
+        </BrowserRouter>
+    )
 }
 
 export default NavBar
