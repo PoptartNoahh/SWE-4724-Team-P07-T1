@@ -1,44 +1,27 @@
-import { BrowserRouter, Routes, Route, NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { useMemo, useState } from 'react'
+import { BrowserRouter, Routes, Route, NavLink, useLocation, useNavigate, Navigate } from 'react-router-dom'
+import { useState } from 'react'
 import './navbar.css'
-import { clearCurrentUser, getCurrentUser } from './services/authService'
 
 import LoginPage from './pages/loginPage'
 import Dashboard from './pages/dashboard'
 import Project from './pages/Project'
 import Report from './pages/Report'
+import { getCurrentUser, isAuthenticated, logout } from './services/authService'
 
 function TopBar() {
   const navigate = useNavigate()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
 
-  const isAuthRoute = useMemo(() => location.pathname.startsWith('/login'), [location.pathname])
+  const isAuthRoute = location.pathname.startsWith('/login')
   const currentUser = getCurrentUser()
-  const user = useMemo(() => {
-    if (!currentUser) {
-      return {
-        name: 'Guest User',
-        role: 'User',
-        initials: 'GU',
-      }
-    }
-
-    const firstName = String(currentUser.first_name ?? '').trim()
-    const lastName = String(currentUser.last_name ?? '').trim()
-    const fullName = `${firstName} ${lastName}`.trim()
-    const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || 'U'
-
-    return {
-      name: fullName || currentUser.email || 'User',
-      role: currentUser.role || 'User',
-      initials,
-    }
-  }, [currentUser])
+  const displayName = currentUser?.fullName ?? 'Username'
+  const displayRole = currentUser?.role ?? 'Student'
+  const avatarText = String(displayName).charAt(0).toUpperCase() || 'U'
 
   const handleLogout = () => {
     setMenuOpen(false)
-    clearCurrentUser()
+    logout()
     navigate('/login')
   }
 
@@ -64,10 +47,10 @@ function TopBar() {
             </button>
             <button className="user-btn" type="button" onClick={() => setMenuOpen((o) => !o)}>
               <span className="user-meta">
-                <span className="user-name">{user.name}</span>
-                <span className="user-role">{user.role}</span>
+                <span className="user-name">{displayName}</span>
+                <span className="user-role">{displayRole}</span>
               </span>
-              <span className="user-avatar">{user.initials}</span>
+              <span className="user-avatar">{avatarText}</span>
             </button>
             {menuOpen && (
               <div className="menu" role="menu" aria-label="User menu">
@@ -86,6 +69,20 @@ function TopBar() {
   )
 }
 
+function ProtectedRoute({ children }) {
+  if (!isAuthenticated()) {
+    return <Navigate to="/login" replace />
+  }
+  return children
+}
+
+function PublicOnlyRoute({ children }) {
+  if (isAuthenticated()) {
+    return <Navigate to="/dashboard" replace />
+  }
+  return children
+}
+
 function NavBar() {
     return (
         <BrowserRouter>
@@ -93,12 +90,40 @@ function NavBar() {
               <TopBar />
               <div className="app-content">
                 <Routes>
-                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
                     {/* Handy alias for older code paths */}
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/login" element={<LoginPage />} />
-                    <Route path="/projects/:projectId" element={<Project />} />
-                    <Route path="/reports/:reportId" element={<Report />} />
+                    <Route
+                      path="/dashboard"
+                      element={(
+                        <ProtectedRoute>
+                          <Dashboard />
+                        </ProtectedRoute>
+                      )}
+                    />
+                    <Route
+                      path="/login"
+                      element={(
+                        <PublicOnlyRoute>
+                          <LoginPage />
+                        </PublicOnlyRoute>
+                      )}
+                    />
+                    <Route
+                      path="/projects/:projectId"
+                      element={(
+                        <ProtectedRoute>
+                          <Project />
+                        </ProtectedRoute>
+                      )}
+                    />
+                    <Route
+                      path="/reports/:reportId"
+                      element={(
+                        <ProtectedRoute>
+                          <Report />
+                        </ProtectedRoute>
+                      )}
+                    />
                 </Routes>
               </div>
             </div>

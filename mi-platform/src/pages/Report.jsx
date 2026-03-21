@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import Layout from '../components/Layout.jsx'
 import { getReport, updateFlagStatus, emailReport } from '../services/projectService.js'
 import './Report.css'
 
@@ -42,12 +41,11 @@ function Report() {
   }
 
   if (!report) {
-    return <Layout><p style={{ padding: '60px', textAlign: 'center', color: '#999' }}>Loading...</p></Layout>
+    return <p style={{ padding: '60px', textAlign: 'center', color: '#999' }}>Loading...</p>
   }
 
   return (
-    <Layout>
-      <div className="report-page">
+    <div className="report-page">
 
         <div className="report-header">
           <span className="report-id">ID: {report.id}</span>
@@ -117,8 +115,7 @@ function Report() {
           <button className="exit-btn" onClick={() => navigate(-1)}>Exit</button>
         </div>
 
-      </div>
-    </Layout>
+    </div>
   )
 }
 

@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { loginWithCredentials } from '../services/authService'
 import './loginPage.css'
-import { loginUser } from '../services/authService'
 
 function loginPage() {
   const navigate = useNavigate()
-  const [form, setForm] = useState({ identifier: '', password: '' })
+  const [form, setForm] = useState({ email: '', password: '' })
   const [error, setError] = useState('')
 
   const handleChange = (e) => {
@@ -14,12 +14,11 @@ function loginPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!form.identifier || !form.password) {
+    if (!form.email || !form.password) {
       setError('Please fill in all fields.')
       return
     }
-
-    const result = loginUser(form)
+    const result = loginWithCredentials(form.email, form.password)
     if (!result.ok) {
       setError(result.error)
       return
@@ -39,13 +38,13 @@ function loginPage() {
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
-            <label htmlFor="identifier">Email or Username</label>
+            <label htmlFor="email">Email</label>
             <input
-              id="identifier"
-              type="text"
-              name="identifier"
-              placeholder="you@example.com or username"
-              value={form.identifier}
+              id="email"
+              type="email"
+              name="email"
+              placeholder="you@example.com"
+              value={form.email}
               onChange={handleChange}
             />
           </div>

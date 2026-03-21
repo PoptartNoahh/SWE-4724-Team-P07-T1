@@ -1,56 +1,31 @@
-import sampleUsersData from '../data/sampleUsers.json'
+import users from '../data/sampleUsers.json'
 
-const SESSION_USER_KEY = 'miPlatform.currentUser'
+const SESSION_USER_KEY = 'currentUser'
 
-function toSafeSessionUser(user) {
-  return {
-    user_id: user.user_id,
-    first_name: user.first_name,
-    last_name: user.last_name,
-    email: user.email,
-    role: user.role,
-    department: user.department,
-    is_active: user.is_active,
-  }
+function normalizeEmail(email) {
+  return String(email ?? '').trim().toLowerCase()
 }
 
-function normalize(value) {
-  return String(value ?? '').trim().toLowerCase()
+function stripPassword(user) {
+  const { password, ...safeUser } = user
+  return safeUser
 }
 
-export function loginUser({ identifier, password }) {
-  const normalizedIdentifier = normalize(identifier)
+export function loginWithCredentials(email, password) {
+  const normalizedEmail = normalizeEmail(email)
   const rawPassword = String(password ?? '')
 
-  if (!normalizedIdentifier || !rawPassword) {
-    return { ok: false, error: 'Please enter both email/username and password.' }
-  }
-
-  const users = Array.isArray(sampleUsersData?.users) ? sampleUsersData.users : []
-
-  const matchedUser = users.find((user) => {
-    const email = normalize(user.email)
-    const username = normalize(user.login?.username)
-    const storedPassword = String(user.login?.password ?? '')
-
-    return (
-      (normalizedIdentifier === email || normalizedIdentifier === username) &&
-      rawPassword === storedPassword
-    )
-  })
+  const matchedUser = users.find(
+    (user) => user.active && normalizeEmail(user.email) === normalizedEmail && user.password === rawPassword
+  )
 
   if (!matchedUser) {
-    return { ok: false, error: 'Invalid credentials.' }
+    return { ok: false, error: 'Invalid email or password.' }
   }
 
-  if (!matchedUser.is_active) {
-    return { ok: false, error: 'This user account is inactive.' }
-  }
-
-  const sessionUser = toSafeSessionUser(matchedUser)
-  sessionStorage.setItem(SESSION_USER_KEY, JSON.stringify(sessionUser))
-
-  return { ok: true, user: sessionUser }
+  const safeUser = stripPassword(matchedUser)
+  sessionStorage.setItem(SESSION_USER_KEY, JSON.stringify(safeUser))
+  return { ok: true, user: safeUser }
 }
 
 export function getCurrentUser() {
@@ -60,12 +35,15 @@ export function getCurrentUser() {
   try {
     return JSON.parse(raw)
   } catch {
+    sessionStorage.removeItem(SESSION_USER_KEY)
     return null
   }
 }
 
-export function clearCurrentUser() {
-  sessionStorage.removeItem(SESSION_USER_KEY)
+export function isAuthenticated() {
+  return Boolean(getCurrentUser())
 }
 
-export { SESSION_USER_KEY }
+export function logout() {
+  sessionStorage.removeItem(SESSION_USER_KEY)
+}
