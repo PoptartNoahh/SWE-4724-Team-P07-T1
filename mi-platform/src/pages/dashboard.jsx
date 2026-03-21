@@ -51,7 +51,9 @@ function Dashboard() {
       }
     }
     load()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const semesterProjects = useMemo(() => {
@@ -59,15 +61,16 @@ function Dashboard() {
     for (const p of projects) {
       const semester = semesterLabelFromPath(p.path)
       const existing = groups.get(semester) ?? { semester, projects: [] }
-      existing.projects.push({ id: p.id, name: p.name || p.path || `Project ${p.id}` })
+      existing.projects.push({ id: p.id, name: p.name || `Project ${p.id}` })
       groups.set(semester, existing)
     }
     return Array.from(groups.values())
   }, [projects])
 
-  const recentProjects = useMemo(() => {
-    return projects.slice(0, 4).map(p => ({ id: p.id, name: p.name || p.path || `Project ${p.id}` }))
-  }, [projects])
+  const recentProjects = useMemo(
+    () => projects.slice(0, 4).map((p) => ({ id: p.id, name: p.name || `Project ${p.id}` })),
+    [projects]
+  )
 
   const sortedSemesterProjects = useMemo(
     () => [...semesterProjects].sort(sortByMostRecentSemester),
@@ -75,15 +78,15 @@ function Dashboard() {
   )
 
   const filteredSemesterProjects = useMemo(
-    () => selectedSemester === 'all'
-      ? sortedSemesterProjects
-      : sortedSemesterProjects.filter(g => g.semester === selectedSemester),
+    () =>
+      selectedSemester === 'all'
+        ? sortedSemesterProjects
+        : sortedSemesterProjects.filter((g) => g.semester === selectedSemester),
     [selectedSemester, sortedSemesterProjects]
   )
 
   return (
     <div className="dash">
-      {/* Page header */}
       <div className="dash-header">
         <div>
           <h1 className="dash-title">Dashboard</h1>
@@ -91,121 +94,92 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* Quick-access cards */}
       <section className="dash-quick">
         <h2 className="dash-section-label">Recent Projects</h2>
         <div className="dash-quick-grid">
-          {recentProjects.map(p => (
-            <button key={p.id} className="dash-quick-card" onClick={() => navigate(`/projects/${p.id}`)}>
+          {recentProjects.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className="dash-quick-card"
+              onClick={() => navigate(`/projects/${p.id}`)}
+            >
               <div className="dash-quick-icon">
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--ksu-gold)" strokeWidth="1.8">
-                  <rect x="3" y="3" width="14" height="14" rx="2"/>
-                  <path d="M7 7h6M7 10h4"/>
+                  <rect x="3" y="3" width="14" height="14" rx="2" />
+                  <path d="M7 7h6M7 10h4" />
                 </svg>
               </div>
               <span className="dash-quick-name">{p.name}</span>
             </button>
           ))}
-        </aside>
+        </div>
+      </section>
 
-        {/* Main content */}
-        <main className="main-content">
+      <section className="new-project-section">
+        <h2 className="section-heading">New Projects</h2>
+        <button type="button" className="create-btn" onClick={() => navigate('/projects/new')}>
+          Create
+        </button>
+      </section>
 
-          {/* New project creator */}
-          <section className="new-project-section">
-            <h2 className="section-heading">New Projects</h2>
-           
-            <button className="create-btn" onClick={() => navigate('/projects/new')}>Create</button>
-          </section>
-
-          {/* Projects list */}
-          <section className="projects-section">
-            <div className="projects-header-row">
-              <h2 className="section-heading">Projects</h2>
-              <div className="semester-filter-wrap">
-                <label htmlFor="semester-filter" className="semester-filter-label">Semester</label>
-                <select
-                  id="semester-filter"
-                  className="semester-filter-select"
-                  value={selectedSemester}
-                  onChange={(e) => setSelectedSemester(e.target.value)}
-                >
-                  <option value="all">All semesters</option>
-                  {sortedSemesterProjects.map((group) => (
-                    <option key={group.semester} value={group.semester}>
-                      {group.semester}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            {loadError && (
-              <div style={{
-                background: '#fff7ed',
-                border: '1px solid #fed7aa',
-                color: '#9a3412',
-                padding: '12px 14px',
-                borderRadius: '12px',
-                fontWeight: 700,
-                marginBottom: '12px'
-              }}>
-                {loadError}
-              </div>
-            )}
-            <div className="projects-scroll">
-              {!loadError && filteredSemesterProjects.length === 0 && (
-                <p style={{ color: '#6b7280', fontWeight: 700, margin: 0 }}>
-                  No projects returned from the backend yet.
-                </p>
-              )}
-              {filteredSemesterProjects.map((group) => (
-                <div key={group.semester} className="semester-group">
-                  <p className="semester-label">{group.semester}</p>
-                  <div className="semester-projects">
-                    {group.projects.map((p) => (
-                          <button
-                            key={p.id}
-                            className="project-btn"
-                            onClick={() => navigate(`/projects/${p.id}`)}
-                          >
-                            {p.name}
-                          </button>
-                    ))}
-                  </div>
-                </div>
+      <section className="projects-section">
+        <div className="projects-header-row">
+          <h2 className="section-heading">Projects</h2>
+          <div className="semester-filter-wrap">
+            <label htmlFor="semester-filter" className="semester-filter-label">
+              Semester
+            </label>
+            <select
+              id="semester-filter"
+              className="semester-filter-select"
+              value={selectedSemester}
+              onChange={(e) => setSelectedSemester(e.target.value)}
+            >
+              <option value="all">All semesters</option>
+              {sortedSemesterProjects.map((group) => (
+                <option key={group.semester} value={group.semester}>
+                  {group.semester}
+                </option>
               ))}
             </select>
           </div>
         </div>
 
         {loadError && (
-          <div className="dash-error">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="var(--danger)" style={{flexShrink: 0}}>
-              <circle cx="8" cy="8" r="7" fill="none" stroke="var(--danger)" strokeWidth="1.5"/>
-              <path d="M8 4v5M8 11v1" stroke="var(--danger)" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
+          <div
+            style={{
+              background: '#fff7ed',
+              border: '1px solid #fed7aa',
+              color: '#9a3412',
+              padding: '12px 14px',
+              borderRadius: '12px',
+              fontWeight: 700,
+              marginBottom: '12px',
+            }}
+          >
             {loadError}
           </div>
         )}
 
-        <div className="dash-projects-list">
+        <div className="projects-scroll">
           {!loadError && filteredSemesterProjects.length === 0 && (
-            <p className="dash-empty">No projects found.</p>
+            <p style={{ color: '#6b7280', fontWeight: 700, margin: 0 }}>
+              No projects returned from the backend yet.
+            </p>
           )}
-          {filteredSemesterProjects.map(group => (
-            <div key={group.semester} className="dash-semester-group">
-              <div className="dash-semester-label">{group.semester}</div>
-              <div className="dash-semester-items">
-                {group.projects.map(p => (
-                  <button key={p.id} className="dash-project-row" onClick={() => navigate(`/projects/${p.id}`)}>
-                    <svg className="dash-project-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--text-tertiary)" strokeWidth="1.4">
-                      <rect x="2" y="2" width="12" height="12" rx="2"/>
-                      <path d="M5 5h6M5 8h3"/>
-                    </svg>
-                    <span className="dash-project-name">{p.name}</span>
-                    <svg className="dash-project-arrow" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="var(--text-tertiary)" strokeWidth="1.5">
-                      <path d="M5 3l4 4-4 4"/>
-                    </svg>
+          {filteredSemesterProjects.map((group) => (
+            <div key={group.semester} className="semester-group">
+              <p className="semester-label">{group.semester}</p>
+              <div className="semester-projects">
+                {group.projects.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className="project-btn"
+                    onClick={() => navigate(`/projects/${p.id}`)}
+                  >
+                    {p.name}
                   </button>
                 ))}
               </div>
