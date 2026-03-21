@@ -1,4 +1,12 @@
-import { BrowserRouter, Routes, Route, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  NavLink,
+  useLocation,
+  useNavigate,
+  Navigate,
+} from 'react-router-dom'
 import { useMemo, useState, useRef, useEffect } from 'react'
 import './navbar.css'
 
@@ -8,15 +16,37 @@ import Dashboard from './pages/dashboard'
 import Project from './pages/Project'
 import Report from './pages/Report'
 import CreateProject from './pages/CreateProject'
+import { getCurrentUser, logout, isAuthenticated } from './services/authService'
+
+function ProtectedRoute({ children }) {
+  if (!isAuthenticated()) {
+    return <Navigate to="/login" replace />
+  }
+  return children
+}
+
+function PublicOnlyRoute({ children }) {
+  if (isAuthenticated()) {
+    return <Navigate to="/dashboard" replace />
+  }
+  return children
+}
 
 function TopBar() {
   const navigate = useNavigate()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
+  const [sessionUser, setSessionUser] = useState(() => getCurrentUser())
 
   const isAuthRoute = useMemo(() => location.pathname.startsWith('/login'), [location.pathname])
-  const user = useMemo(() => ({ name: 'Admin User', role: 'CCSE Administrator' }), [])
+
+  useEffect(() => {
+    setSessionUser(getCurrentUser())
+  }, [location.pathname])
+
+  const displayName = sessionUser?.fullName ?? sessionUser?.name ?? 'User'
+  const displayRole = sessionUser?.role ?? ''
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -30,6 +60,8 @@ function TopBar() {
 
   const handleLogout = () => {
     setMenuOpen(false)
+    logout()
+    setSessionUser(null)
     navigate('/login')
   }
 
@@ -44,7 +76,11 @@ function TopBar() {
           </div>
           {!isAuthRoute && (
             <nav className="app-navlinks" aria-label="Primary navigation">
-              <NavLink to="/" end className={({ isActive }) => `app-navlink ${isActive ? 'is-active' : ''}`}>
+              <NavLink
+                to="/dashboard"
+                end
+                className={({ isActive }) => `app-navlink ${isActive ? 'is-active' : ''}`}
+              >
                 Dashboard
               </NavLink>
             </nav>
@@ -61,17 +97,17 @@ function TopBar() {
                 </svg>
               </button>
               <button className="user-btn" type="button" onClick={() => setMenuOpen((o) => !o)}>
-                <span className="user-avatar">{user.name.charAt(0)}</span>
+                <span className="user-avatar">{displayName.charAt(0)}</span>
                 <span className="user-meta">
-                  <span className="user-name">{user.name}</span>
-                  <span className="user-role">{user.role}</span>
+                  <span className="user-name">{displayName}</span>
+                  <span className="user-role">{displayRole}</span>
                 </span>
               </button>
               {menuOpen && (
                 <div className="menu" role="menu" aria-label="User menu">
                   <div className="menu-header">
-                    <div className="menu-header-name">{user.name}</div>
-                    <div className="menu-header-role">{user.role}</div>
+                    <div className="menu-header-name">{displayName}</div>
+                    <div className="menu-header-role">{displayRole}</div>
                   </div>
                   <div className="menu-divider" />
                   <button className="menu-item" type="button" onClick={handleLogout}>
@@ -95,12 +131,47 @@ function NavBar() {
         <div className="app-content">
           <Layout>
             <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/projects/new" element={<CreateProject />} />
-              <Route path="/projects/:projectId" element={<Project />} />
-              <Route path="/reports/:reportId" element={<Report />} />
+              <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
+              <Route
+                path="/"
+                element={(
+                  <ProtectedRoute>
+                    <Navigate to="/dashboard" replace />
+                  </ProtectedRoute>
+                )}
+              />
+              <Route
+                path="/dashboard"
+                element={(
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                )}
+              />
+              <Route
+                path="/projects/new"
+                element={(
+                  <ProtectedRoute>
+                    <CreateProject />
+                  </ProtectedRoute>
+                )}
+              />
+              <Route
+                path="/projects/:projectId"
+                element={(
+                  <ProtectedRoute>
+                    <Project />
+                  </ProtectedRoute>
+                )}
+              />
+              <Route
+                path="/reports/:reportId"
+                element={(
+                  <ProtectedRoute>
+                    <Report />
+                  </ProtectedRoute>
+                )}
+              />
             </Routes>
           </Layout>
         </div>

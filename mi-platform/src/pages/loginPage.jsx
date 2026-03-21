@@ -1,23 +1,33 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { loginWithCredentials } from '../services/authService'
 import './loginPage.css'
 
 function LoginPage() {
   const navigate = useNavigate()
   const [form, setForm] = useState({ email: '', password: '' })
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (!form.email || !form.password) {
       setError('Please fill in all fields.')
       return
     }
-    navigate('/dashboard')
+    setBusy(true)
+    setError('')
+    const result = await loginWithCredentials(form.email, form.password)
+    setBusy(false)
+    if (!result.ok) {
+      setError(result.error)
+      return
+    }
+    navigate('/dashboard', { replace: true })
   }
 
   return (
@@ -70,7 +80,9 @@ function LoginPage() {
               />
             </div>
 
-            <button type="submit" className="login-btn">Sign in</button>
+            <button type="submit" className="login-btn" disabled={busy}>
+              {busy ? 'Signing in…' : 'Sign in'}
+            </button>
           </form>
 
           <p className="login-footer-text">

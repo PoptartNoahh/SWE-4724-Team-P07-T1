@@ -2,7 +2,7 @@ import { projects, meetings, reports } from './mockData.js'
 
 // These functions are wired to the FastAPI backend when it's running.
 // If the backend is unreachable, they fall back to the existing mock data so the UI keeps working.
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
 
 async function fetchJson(path, options) {
   const res = await fetch(`${API_BASE_URL}${path}`, options)

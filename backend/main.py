@@ -1195,28 +1195,39 @@ def register_user(payload: RegisterRequest):
 def login_user(payload: LoginRequest):
     from backend.auth_utils import verify_password
 
+    email = (payload.email or "").strip()
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
-        SELECT user_id, user_password, user_role
+    cursor.execute(
+        """
+        SELECT user_id, user_name, user_email, user_password, user_role
         FROM Users
-        WHERE user_name = ?
-    """, payload.username)
+        WHERE LOWER(LTRIM(RTRIM(user_email))) = LOWER(LTRIM(RTRIM(?)))
+        """,
+        email,
+    )
 
     row = cursor.fetchone()
     conn.close()
 
     if not row:
-        raise HTTPException(status_code=400, detail="User not found")
+        raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    user_id, stored_hash, role = row
+    user_id, user_name, user_email, stored_hash, role = row
 
     if not verify_password(payload.password, stored_hash):
-        raise HTTPException(status_code=401, detail="Invalid password")
+        raise HTTPException(status_code=401, detail="Invalid email or password")
 
     return {
         "message": "Login successful",
-        "user_id": user_id,
-        "role": role
+        "user": {
+            "id": int(user_id),
+            "name": str(user_name or "").strip(),
+            "email": str(user_email or "").strip(),
+            "role": role,
+        },
     }
