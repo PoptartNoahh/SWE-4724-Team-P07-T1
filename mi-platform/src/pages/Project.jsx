@@ -3,6 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { getProject, getProjectMeetings, uploadProjectFile } from '../services/projectService.js'
 import './Project.css'
 
+const RISK_META = {
+  red:    { label: 'High',     className: 'risk--high' },
+  yellow: { label: 'Moderate', className: 'risk--moderate' },
+  green:  { label: 'Low',      className: 'risk--low' },
+}
+
 function Project() {
   const { projectId } = useParams()
   const navigate = useNavigate()
@@ -19,7 +25,6 @@ function Project() {
   function handleUpload(e) {
     const file = e.target.files[0]
     if (!file) return
-
     setUploading(true)
     setUploadMsg('')
     uploadProjectFile(projectId, file)
@@ -28,88 +33,82 @@ function Project() {
       .finally(() => setUploading(false))
   }
 
-  function formatDate(dateStr) {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'short', day: 'numeric', year: 'numeric'
-    })
+  function fmtDate(d) {
+    return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
 
-  function formatTime(dateStr) {
-    return new Date(dateStr).toLocaleTimeString('en-US', {
-      hour: 'numeric', minute: '2-digit'
-    })
-  }
-
-  // risk level color mapping
-  function getRiskColor(level) {
-    if (level === 'red') return '#ef4444'
-    if (level === 'yellow') return '#eab308'
-    return '#22c55e'
-  }
-
-  function getRiskLabel(level) {
-    if (level === 'red') return 'High'
-    if (level === 'yellow') return 'Moderate'
-    return 'None'
+  function fmtTime(d) {
+    return new Date(d).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
   }
 
   if (!project) {
-    return <p style={{ padding: '60px', textAlign: 'center', color: '#999' }}>Loading...</p>
+    return <div className="proj-loading">Loading project&hellip;</div>
   }
 
   return (
-    <div className="project-page">
+    <div className="proj">
+      {/* Breadcrumb */}
+      <nav className="proj-breadcrumb">
+        <button className="proj-breadcrumb-link" onClick={() => navigate('/')}>Dashboard</button>
+        <span className="proj-breadcrumb-sep">/</span>
+        <span className="proj-breadcrumb-current">{project.title}</span>
+      </nav>
 
-        <div className="project-header">
-          <h1 className="project-title">{project.title}</h1>
-          <label className="upload-btn">
-            {uploading ? 'Uploading...' : 'Upload File Contents'}
-            <input type="file" hidden onChange={handleUpload} disabled={uploading} />
-          </label>
-        </div>
-
-        {uploadMsg && <p className="upload-msg">{uploadMsg}</p>}
-
-        {project.latestMeetingAt && (
-          <div className="latest-meeting-info">
-            <span className="latest-meeting-label">Latest Meeting Recorded</span>
-            <span>Date: {formatDate(project.latestMeetingAt)}</span>
-            <span>Time: {formatTime(project.latestMeetingAt)}</span>
-          </div>
-        )}
-
-        <hr className="project-divider" />
-
-        <div className="meeting-list">
-          {meetings.length === 0 && (
-            <p style={{ textAlign: 'center', color: '#888', padding: '40px' }}>No meetings recorded yet.</p>
+      {/* Header */}
+      <div className="proj-header">
+        <div>
+          <h1 className="proj-title">{project.title}</h1>
+          {project.latestMeetingAt && (
+            <p className="proj-meta">
+              Latest meeting: {fmtDate(project.latestMeetingAt)} at {fmtTime(project.latestMeetingAt)}
+            </p>
           )}
-          {meetings.map((mtg) => (
-            <div key={mtg.id} className="meeting-card">
-              <div className="meeting-card-header">
-                <span className="meeting-id">ID: {mtg.id}</span>
-                <span className="meeting-meta">{formatDate(mtg.meetingDate)}</span>
-                <span className="meeting-meta">{mtg.duration}</span>
-              </div>
-              <div className="meeting-card-body">
-                <div className="meeting-details">
-                  <h4 className="section-label">Details</h4>
-                  <p>{mtg.details}</p>
-                </div>
-                <div className="meeting-risk-col">
-                  <h4 className="section-label">Risk Level</h4>
-                  <span className="risk-badge" style={{ background: getRiskColor(mtg.riskLevel) }}>
-                    {getRiskLabel(mtg.riskLevel)}
-                  </span>
-                </div>
-                <button className="view-report-btn" onClick={() => navigate(`/reports/${mtg.reportId}`)}>
-                  View Report
-                </button>
-              </div>
-            </div>
-          ))}
         </div>
+        <label className="proj-upload-btn">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6">
+            <path d="M8 10V3m0 0L5 6m3-3l3 3M3 12h10"/>
+          </svg>
+          {uploading ? 'Uploading...' : 'Upload File'}
+          <input type="file" hidden onChange={handleUpload} disabled={uploading} />
+        </label>
       </div>
+
+      {uploadMsg && <div className="proj-upload-msg">{uploadMsg}</div>}
+
+      {/* Meeting list */}
+      <section className="proj-meetings">
+        <h2 className="proj-section-title">Meetings</h2>
+        {meetings.length === 0 && (
+          <p className="proj-empty">No meetings recorded yet.</p>
+        )}
+        <div className="proj-meeting-list">
+          {meetings.map(mtg => {
+            const risk = RISK_META[mtg.riskLevel] || RISK_META.green
+            return (
+              <div key={mtg.id} className="mtg-card">
+                <div className="mtg-card-top">
+                  <div className="mtg-card-meta">
+                    <span className="mtg-date">{fmtDate(mtg.meetingDate)}</span>
+                    <span className="mtg-dot">&middot;</span>
+                    <span className="mtg-duration">{mtg.duration}</span>
+                  </div>
+                  <span className={`mtg-risk-badge ${risk.className}`}>{risk.label}</span>
+                </div>
+                <p className="mtg-details">{mtg.details}</p>
+                <div className="mtg-card-actions">
+                  <button className="mtg-view-btn" onClick={() => navigate(`/reports/${mtg.reportId}`)}>
+                    View Report
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M5 3l4 4-4 4"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </section>
+    </div>
   )
 }
 

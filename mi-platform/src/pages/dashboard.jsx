@@ -1,39 +1,24 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import './Dashboard.css'
-const TERM_ORDER = {
-  spring: 1,
-  summer: 2,
-  fall: 3,
-  winter: 4,
-}
+import './dashboard.css'
 
-const parseSemester = (semesterLabel) => {
-  const [termRaw = '', yearRaw = '0'] = semesterLabel.split(' ')
+const TERM_ORDER = { spring: 1, summer: 2, fall: 3, winter: 4 }
+
+const parseSemester = (label) => {
+  const [termRaw = '', yearRaw = '0'] = label.split(' ')
   const year = Number.parseInt(yearRaw, 10)
-  const term = termRaw.toLowerCase()
-
-  return {
-    year: Number.isNaN(year) ? 0 : year,
-    termOrder: TERM_ORDER[term] ?? 0,
-  }
+  return { year: Number.isNaN(year) ? 0 : year, termOrder: TERM_ORDER[termRaw.toLowerCase()] ?? 0 }
 }
 
 const sortByMostRecentSemester = (a, b) => {
-  const aMeta = parseSemester(a.semester)
-  const bMeta = parseSemester(b.semester)
-
-  if (aMeta.year !== bMeta.year) {
-    return bMeta.year - aMeta.year
-  }
-
-  return bMeta.termOrder - aMeta.termOrder
+  const am = parseSemester(a.semester)
+  const bm = parseSemester(b.semester)
+  return am.year !== bm.year ? bm.year - am.year : bm.termOrder - am.termOrder
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
 
 function semesterLabelFromPath(path) {
-  // Expected: YYYY/term/name
   const [yearRaw = '', termRaw = ''] = String(path ?? '').split('/')
   const year = Number.parseInt(yearRaw, 10)
   const term = String(termRaw).toLowerCase()
@@ -43,8 +28,6 @@ function semesterLabelFromPath(path) {
 
 function Dashboard() {
   const navigate = useNavigate()
-  //const [newProjectName, setNewProjectName] = useState('')
-  const [showAll, setShowAll] = useState(false)
   const [selectedSemester, setSelectedSemester] = useState('all')
   const [projects, setProjects] = useState([])
   const [loadError, setLoadError] = useState('')
@@ -58,21 +41,17 @@ function Dashboard() {
         if (!res.ok) throw new Error(`Failed to load projects (${res.status})`)
         const data = await res.json()
         if (!cancelled) setProjects(Array.isArray(data) ? data : [])
-      } catch (e) {
-        // If backend isn't running, keep the dashboard usable (empty list rather than crashing),
-        // but show a clear message so it's obvious what's wrong.
+      } catch {
         if (!cancelled) {
           setProjects([])
           setLoadError(
-            `Could not load projects from backend at ${API_BASE_URL}. Start the FastAPI server (port 8000) or set VITE_API_BASE_URL.`
+            `Could not reach backend at ${API_BASE_URL}. Start the FastAPI server or set VITE_API_BASE_URL.`
           )
         }
       }
     }
     load()
-    return () => {
-      cancelled = true
-    }
+    return () => { cancelled = true }
   }, [])
 
   const semesterProjects = useMemo(() => {
@@ -80,16 +59,14 @@ function Dashboard() {
     for (const p of projects) {
       const semester = semesterLabelFromPath(p.path)
       const existing = groups.get(semester) ?? { semester, projects: [] }
-      existing.projects.push({ id: p.id, name: p.path || p.name || `Project ${p.id}` })
+      existing.projects.push({ id: p.id, name: p.name || p.path || `Project ${p.id}` })
       groups.set(semester, existing)
     }
     return Array.from(groups.values())
   }, [projects])
 
   const recentProjects = useMemo(() => {
-    // Most-recent heuristic: just take the first few returned by backend for now.
-    // TODO: backend should return a dedicated "recent" list (or sort by updatedAt).
-    return projects.slice(0, 3).map((p) => ({ id: p.id, name: p.path || p.name || `Project ${p.id}` }))
+    return projects.slice(0, 4).map(p => ({ id: p.id, name: p.name || p.path || `Project ${p.id}` }))
   }, [projects])
 
   const sortedSemesterProjects = useMemo(
@@ -98,129 +75,95 @@ function Dashboard() {
   )
 
   const filteredSemesterProjects = useMemo(
-    () =>
-      selectedSemester === 'all'
-        ? sortedSemesterProjects
-        : sortedSemesterProjects.filter((group) => group.semester === selectedSemester),
+    () => selectedSemester === 'all'
+      ? sortedSemesterProjects
+      : sortedSemesterProjects.filter(g => g.semester === selectedSemester),
     [selectedSemester, sortedSemesterProjects]
   )
 
   return (
-    <div className="dashboard-layout">
-      <div className="dashboard-body">
-        {/* Left sidebar — recent projects */}
-        <aside className="sidebar">
-          <p className="sidebar-label">Recent</p>
-          {recentProjects.map((p) => (
-            <button
-              key={p.id}
-              className="sidebar-project-btn"
-              onClick={() => navigate(`/projects/${p.id}`)}
-            >
-              {p.name}
-            </button>
-          ))}
-        </aside>
-
-        {/* Main content */}
-        <main className="main-content">
-
-          {/* New project creator */}
-          <section className="new-project-section">
-            <h2 className="section-heading">New Projects</h2>
-           
-            <button className="create-btn">Create</button>
-          </section>
-
-          {/* Projects list */}
-          <section className="projects-section">
-            <div className="projects-header-row">
-              <h2 className="section-heading">Projects</h2>
-              <div className="semester-filter-wrap">
-                <label htmlFor="semester-filter" className="semester-filter-label">Semester</label>
-                <select
-                  id="semester-filter"
-                  className="semester-filter-select"
-                  value={selectedSemester}
-                  onChange={(e) => setSelectedSemester(e.target.value)}
-                >
-                  <option value="all">All semesters</option>
-                  {sortedSemesterProjects.map((group) => (
-                    <option key={group.semester} value={group.semester}>
-                      {group.semester}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            {loadError && (
-              <div style={{
-                background: '#fff7ed',
-                border: '1px solid #fed7aa',
-                color: '#9a3412',
-                padding: '12px 14px',
-                borderRadius: '12px',
-                fontWeight: 700,
-                marginBottom: '12px'
-              }}>
-                {loadError}
-              </div>
-            )}
-            <div className="projects-scroll">
-              {!loadError && filteredSemesterProjects.length === 0 && (
-                <p style={{ color: '#6b7280', fontWeight: 700, margin: 0 }}>
-                  No projects returned from the backend yet.
-                </p>
-              )}
-              {filteredSemesterProjects.map((group) => (
-                <div key={group.semester} className="semester-group">
-                  <p className="semester-label">{group.semester}</p>
-                  <div className="semester-projects">
-                    {group.projects.map((p) => (
-                          <button
-                            key={p.id}
-                            className="project-btn"
-                            onClick={() => navigate(`/projects/${p.id}`)}
-                          >
-                            {p.name}
-                          </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-        </main>
+    <div className="dash">
+      {/* Page header */}
+      <div className="dash-header">
+        <div>
+          <h1 className="dash-title">Dashboard</h1>
+          <p className="dash-subtitle">Capstone project oversight and risk monitoring</p>
+        </div>
       </div>
 
-      {/* See All overlay */}
-      {showAll && (
-        <div className="overlay">
-          <div className="overlay-header">
-            <h2 className="overlay-title">All Projects</h2>
-            <button className="overlay-close" onClick={() => setShowAll(false)}>✕</button>
-          </div>
-          <div className="overlay-body">
-            {sortedSemesterProjects.map((group) => (
-              <div key={group.semester} className="semester-group">
-                <p className="semester-label">{group.semester}</p>
-                <div className="semester-projects">
-                  {group.projects.map((p) => (
-                    <button
-                      key={p.id}
-                      className="project-btn"
-                      onClick={() => navigate(`/projects/${p.id}`)}
-                    >
-                      {p.name}
-                    </button>
-                  ))}
-                </div>
+      {/* Quick-access cards */}
+      <section className="dash-quick">
+        <h2 className="dash-section-label">Recent Projects</h2>
+        <div className="dash-quick-grid">
+          {recentProjects.map(p => (
+            <button key={p.id} className="dash-quick-card" onClick={() => navigate(`/projects/${p.id}`)}>
+              <div className="dash-quick-icon">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--ksu-gold)" strokeWidth="1.8">
+                  <rect x="3" y="3" width="14" height="14" rx="2"/>
+                  <path d="M7 7h6M7 10h4"/>
+                </svg>
               </div>
-            ))}
+              <span className="dash-quick-name">{p.name}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* Main project listing */}
+      <section className="dash-projects">
+        <div className="dash-projects-header">
+          <h2 className="dash-section-label">All Projects</h2>
+          <div className="dash-filter">
+            <label htmlFor="sem-filter" className="dash-filter-label">Semester</label>
+            <select
+              id="sem-filter"
+              className="dash-filter-select"
+              value={selectedSemester}
+              onChange={e => setSelectedSemester(e.target.value)}
+            >
+              <option value="all">All semesters</option>
+              {sortedSemesterProjects.map(g => (
+                <option key={g.semester} value={g.semester}>{g.semester}</option>
+              ))}
+            </select>
           </div>
         </div>
-      )}
+
+        {loadError && (
+          <div className="dash-error">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="var(--danger)" style={{flexShrink: 0}}>
+              <circle cx="8" cy="8" r="7" fill="none" stroke="var(--danger)" strokeWidth="1.5"/>
+              <path d="M8 4v5M8 11v1" stroke="var(--danger)" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+            {loadError}
+          </div>
+        )}
+
+        <div className="dash-projects-list">
+          {!loadError && filteredSemesterProjects.length === 0 && (
+            <p className="dash-empty">No projects found.</p>
+          )}
+          {filteredSemesterProjects.map(group => (
+            <div key={group.semester} className="dash-semester-group">
+              <div className="dash-semester-label">{group.semester}</div>
+              <div className="dash-semester-items">
+                {group.projects.map(p => (
+                  <button key={p.id} className="dash-project-row" onClick={() => navigate(`/projects/${p.id}`)}>
+                    <svg className="dash-project-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--text-tertiary)" strokeWidth="1.4">
+                      <rect x="2" y="2" width="12" height="12" rx="2"/>
+                      <path d="M5 5h6M5 8h3"/>
+                    </svg>
+                    <span className="dash-project-name">{p.name}</span>
+                    <svg className="dash-project-arrow" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="var(--text-tertiary)" strokeWidth="1.5">
+                      <path d="M5 3l4 4-4 4"/>
+                    </svg>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   )
 }

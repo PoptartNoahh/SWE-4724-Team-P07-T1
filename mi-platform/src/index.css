@@ -1,10 +1,42 @@
-/* Global app defaults (full-viewport, no centered "card" layout) */
 :root {
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  --ksu-black: #1a1a1a;
+  --ksu-gold: #FFC423;
+  --ksu-gold-hover: #e6b020;
+  --ksu-gold-light: #fff8e6;
+
+  --surface: #ffffff;
+  --surface-secondary: #faf9f8;
+  --bg: #f3f2f1;
+
+  --text-primary: #201f1e;
+  --text-secondary: #605e5c;
+  --text-tertiary: #a19f9d;
+
+  --border: #edebe9;
+  --border-strong: #c8c6c4;
+
+  --ms-blue: #0078d4;
+  --ms-blue-hover: #106ebe;
+  --danger: #d13438;
+  --danger-light: #fde7e9;
+  --success: #107c10;
+  --success-light: #dff6dd;
+  --warning: #ffb900;
+  --warning-light: #fff4ce;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  --shadow-sm: 0 1.6px 3.6px rgba(0,0,0,0.07), 0 0.3px 0.9px rgba(0,0,0,0.05);
+  --shadow-md: 0 3.2px 7.2px rgba(0,0,0,0.08), 0 0.6px 1.8px rgba(0,0,0,0.06);
+  --shadow-lg: 0 6.4px 14.4px rgba(0,0,0,0.10), 0 1.2px 3.6px rgba(0,0,0,0.07);
+
+  font-family: 'Segoe UI', -apple-system, system-ui, Roboto, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: #111827;
-  background-color: #f0f2f5;
+  color: var(--text-primary);
+  background-color: var(--bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -18,14 +50,27 @@ html, body, #root {
 body {
   margin: 0;
   min-width: 320px;
-  background: #f0f2f5;
+  background: var(--bg);
+}
+
+* {
+  box-sizing: border-box;
 }
 
 a {
-  color: inherit;
+  color: var(--ms-blue);
   text-decoration: none;
 }
 
-button, input, select {
+a:hover {
+  text-decoration: underline;
+}
+
+button, input, select, textarea {
   font: inherit;
+}
+
+::selection {
+  background: var(--ksu-gold);
+  color: var(--ksu-black);
 }
