@@ -906,20 +906,40 @@ def create_project(payload: CreateProjectRequest) -> Dict[str, Any]:
                 ),
             )
 
-        cursor.execute(
-            f"""
-            INSERT INTO {projects_table}
-                (project_name, project_semester, project_sponsor, project_advisor, project_description, project_year)
-            OUTPUT INSERTED.project_id
-            VALUES (?, ?, ?, ?, ?, ?)
-            """,
-            project_name,
-            project_semester,
-            payload.project_sponsor.strip(),
-            payload.project_advisor,
-            payload.project_description.strip(),
-            project_year,
-        )
+        project_columns = set(_get_table_column_names(cursor, projects_table))
+        project_path = f"{project_year}/{project_semester.lower()}/{_slugify_project_name(project_name)}"
+
+        if "project_path" in project_columns:
+            cursor.execute(
+                f"""
+                INSERT INTO {projects_table}
+                    (project_name, project_semester, project_sponsor, project_advisor, project_description, project_year, project_path)
+                OUTPUT INSERTED.project_id
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                project_name,
+                project_semester,
+                payload.project_sponsor.strip(),
+                payload.project_advisor,
+                payload.project_description.strip(),
+                project_year,
+                project_path,
+            )
+        else:
+            cursor.execute(
+                f"""
+                INSERT INTO {projects_table}
+                    (project_name, project_semester, project_sponsor, project_advisor, project_description, project_year)
+                OUTPUT INSERTED.project_id
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                project_name,
+                project_semester,
+                payload.project_sponsor.strip(),
+                payload.project_advisor,
+                payload.project_description.strip(),
+                project_year,
+            )
         inserted = cursor.fetchone()
         conn.commit()
         project_id = int(inserted[0]) if inserted else None
@@ -948,22 +968,49 @@ def get_project(project_id: str) -> Dict[str, Any]:
         if not projects_table:
             raise RuntimeError("Could not find a 'Project'/'Projects' table in the current database.")
 
-        cursor.execute(
-            f"""
-            SELECT project_id, project_name
-            FROM {projects_table}
-            WHERE project_id = ?
-            """,
-            pid,
-        )
+        meetings_table = _resolve_meetings_table(cursor)
+        if meetings_table:
+            meeting_cols = set(_get_table_column_names(cursor, meetings_table))
+            meeting_pid_col = "project_id" if "project_id" in meeting_cols else None
+            meeting_date_col = _first_present_column(
+                meeting_cols, ("meeting_date", "created_at", "date", "start_time")
+            )
+        else:
+            meeting_pid_col = None
+            meeting_date_col = None
+
+        if meetings_table and meeting_pid_col and meeting_date_col:
+            cursor.execute(
+                f"""
+                SELECT p.project_id, p.project_name, MAX(m.[{meeting_date_col}]) AS latest_meeting_at
+                FROM {projects_table} p
+                LEFT JOIN {meetings_table} m ON m.[{meeting_pid_col}] = p.project_id
+                WHERE p.project_id = ?
+                GROUP BY p.project_id, p.project_name
+                """,
+                pid,
+            )
+        else:
+            cursor.execute(
+                f"""
+                SELECT project_id, project_name
+                FROM {projects_table}
+                WHERE project_id = ?
+                """,
+                pid,
+            )
         row = cursor.fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="Project not found")
 
-        return {
+        payload = {
             "id": int(row.project_id),
             "title": str(row.project_name or f"Project {row.project_id}"),
         }
+        latest = getattr(row, "latest_meeting_at", None)
+        if latest is not None and hasattr(latest, "isoformat"):
+            payload["latestMeetingAt"] = latest.isoformat()
+        return payload
     finally:
         conn.close()
 
