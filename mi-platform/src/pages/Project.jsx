@@ -82,13 +82,13 @@ function Project() {
             </p>
           )}
         </div>
-        <label className="proj-upload-btn">
+        {/* <label className="proj-upload-btn">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6">
             <path d="M8 10V3m0 0L5 6m3-3l3 3M3 12h10" />
           </svg>
           {uploading ? 'Uploading...' : 'Upload File'}
           <input type="file" hidden onChange={handleUpload} disabled={uploading} />
-        </label>
+        </label> */}
       </div>
 
       {uploadMsg && <div className="proj-upload-msg">{uploadMsg}</div>}

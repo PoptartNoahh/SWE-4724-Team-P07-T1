@@ -105,7 +105,7 @@ function Report() {
             )}
           </div>
         </div>
-        <button
+        {/* <button
           type="button"
           className="rpt-email-btn"
           onClick={handleEmail}
@@ -116,7 +116,7 @@ function Report() {
             <path d="M1 5l7 4 7-4" />
           </svg>
           {emailSent ? 'Sent' : emailing ? 'Sending...' : 'Email Report'}
-        </button>
+        </button> */}
       </div>
       <section className="rpt-section">
         <h2 className="rpt-section-title">Summary</h2>
