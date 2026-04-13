@@ -1,0 +1,184 @@
+.cadmin {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 32px 48px;
+}
+
+.cadmin-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 20px;
+  font-size: 13px;
+}
+
+.cadmin-breadcrumb-link {
+  background: none;
+  border: none;
+  color: var(--ms-blue);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0;
+}
+
+.cadmin-breadcrumb-link:hover {
+  text-decoration: underline;
+}
+
+.cadmin-breadcrumb-sep {
+  color: var(--text-tertiary);
+}
+
+.cadmin-breadcrumb-current {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.cadmin-header {
+  margin-bottom: 20px;
+}
+
+.cadmin-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.cadmin-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.cadmin-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+}
+
+.cadmin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.cadmin-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 600px) {
+  .cadmin-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cadmin-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.cadmin-field--narrow {
+  max-width: 240px;
+}
+
+.cadmin-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cadmin-field input,
+.cadmin-field select {
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--text-primary);
+  background: var(--surface);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.cadmin-field input:focus,
+.cadmin-field select:focus {
+  border-color: var(--ms-blue);
+  box-shadow: 0 0 0 1px var(--ms-blue);
+}
+
+.cadmin-field input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.cadmin-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--danger-light);
+  border: 1px solid #f1c0c0;
+  color: var(--danger);
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.cadmin-success {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--success-light);
+  border: 1px solid #b7e1b5;
+  color: var(--success);
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cadmin-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.cadmin-btn-secondary {
+  padding: 8px 18px;
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.cadmin-btn-secondary:hover {
+  background: var(--border);
+}
+
+.cadmin-btn-primary {
+  padding: 8px 20px;
+  background: var(--ksu-gold);
+  color: var(--ksu-black);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.cadmin-btn-primary:hover {
+  background: var(--ksu-gold-hover);
+}
+
+.cadmin-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

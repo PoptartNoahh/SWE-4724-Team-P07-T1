@@ -97,6 +97,18 @@ export async function emailReport(reportId) {
   }
 }
 
+export async function registerAdmin({ username, email, password, role }) {
+  return await fetchJson('/api/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, email, password, role }),
+  })
+}
+
+export async function getEventLog() {
+  return await fetchJson('/api/events')
+}
+
 // Quick connectivity check (returns plain text: "hey it works!")
 export async function pingBackend() {
   try {

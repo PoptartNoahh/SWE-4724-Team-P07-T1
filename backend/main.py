@@ -1235,6 +1235,7 @@ def register_user(payload: RegisterRequest):
     """, payload.username, payload.email, hashed_pw, payload.role)
 
     conn.commit()
+    _log_event(conn, event_type="register", description=f"New account created: {payload.email} (role={payload.role})")
     conn.close()
     return {"message": "User Created"}
 
@@ -1269,6 +1270,8 @@ def login_user(payload: LoginRequest):
     if not verify_password(payload.password, stored_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
+    _log_event(conn=None, event_type="login", description=f"User '{user_email}' logged in", user_id=int(user_id))
+
     return {
         "message": "Login successful",
         "user": {
@@ -1278,3 +1281,80 @@ def login_user(payload: LoginRequest):
             "role": role,
         },
     }
+
+
+def _log_event(conn, event_type: str, description: str, user_id: int = None):
+    """Insert a row into the EventLog table. Opens its own connection if none provided."""
+    owns_conn = conn is None
+    try:
+        if owns_conn:
+            conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            IF OBJECT_ID('dbo.EventLog', 'U') IS NULL
+            BEGIN
+                CREATE TABLE dbo.EventLog (
+                    id INT IDENTITY(1,1) PRIMARY KEY,
+                    event_type NVARCHAR(64) NOT NULL,
+                    description NVARCHAR(512),
+                    user_id INT NULL,
+                    created_at DATETIME2 DEFAULT SYSUTCDATETIME()
+                )
+            END
+        """)
+        cursor.execute(
+            "INSERT INTO dbo.EventLog (event_type, description, user_id) VALUES (?, ?, ?)",
+            event_type, description, user_id,
+        )
+        conn.commit()
+    except Exception as e:
+        logger.warning("Event log write failed: %s", e)
+    finally:
+        if owns_conn and conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+@app.get("/api/events")
+def get_events():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            IF OBJECT_ID('dbo.EventLog', 'U') IS NULL
+            BEGIN
+                CREATE TABLE dbo.EventLog (
+                    id INT IDENTITY(1,1) PRIMARY KEY,
+                    event_type NVARCHAR(64) NOT NULL,
+                    description NVARCHAR(512),
+                    user_id INT NULL,
+                    created_at DATETIME2 DEFAULT SYSUTCDATETIME()
+                )
+            END
+        """)
+        cursor.execute("""
+            SELECT e.id, e.event_type, e.description, e.user_id, e.created_at,
+                   u.user_name, u.user_email
+            FROM dbo.EventLog e
+            LEFT JOIN dbo.Users u ON e.user_id = u.user_id
+            ORDER BY e.created_at DESC
+        """)
+        rows = cursor.fetchall()
+        return [
+            {
+                "id": r.id,
+                "event_type": r.event_type,
+                "description": r.description,
+                "user_id": r.user_id,
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+                "user_name": r.user_name,
+                "user_email": r.user_email,
+            }
+            for r in rows
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Event log error: {e}")
+    finally:
+        conn.close()

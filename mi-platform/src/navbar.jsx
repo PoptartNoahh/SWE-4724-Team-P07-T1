@@ -16,6 +16,8 @@ import Dashboard from './pages/dashboard'
 import Project from './pages/Project'
 import Report from './pages/Report'
 import CreateProject from './pages/CreateProject'
+import CreateAdmin from './pages/CreateAdmin'
+import EventLog from './pages/EventLog'
 import { getCurrentUser, logout, isAuthenticated } from './services/authService'
 
 function ProtectedRoute({ children }) {
@@ -82,6 +84,18 @@ function TopBar() {
                 className={({ isActive }) => `app-navlink ${isActive ? 'is-active' : ''}`}
               >
                 Dashboard
+              </NavLink>
+              <NavLink
+                to="/admin/new"
+                className={({ isActive }) => `app-navlink ${isActive ? 'is-active' : ''}`}
+              >
+                Add Admin
+              </NavLink>
+              <NavLink
+                to="/events"
+                className={({ isActive }) => `app-navlink ${isActive ? 'is-active' : ''}`}
+              >
+                Event Log
               </NavLink>
             </nav>
           )}
@@ -153,6 +167,22 @@ function NavBar() {
                 element={(
                   <ProtectedRoute>
                     <CreateProject />
+                  </ProtectedRoute>
+                )}
+              />
+              <Route
+                path="/admin/new"
+                element={(
+                  <ProtectedRoute>
+                    <CreateAdmin />
+                  </ProtectedRoute>
+                )}
+              />
+              <Route
+                path="/events"
+                element={(
+                  <ProtectedRoute>
+                    <EventLog />
                   </ProtectedRoute>
                 )}
               />
