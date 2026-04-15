@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { createProject, getAdvisors } from '../services/projectService'
 import './CreateProject.css'
 
-const SEMESTER_OPTIONS = ['SPRING', 'SUMMER', 'FALL', 'WINTER']
+const SEMESTER_OPTIONS = ['SPRING', 'FALL']
 
 function CreateProject() {
   const navigate = useNavigate()
@@ -18,6 +18,7 @@ function CreateProject() {
     project_name: '',
     project_semester: 'FALL',
     project_sponsor: '',
+    sponsor_number: '',
     project_advisor: '',
     project_description: '',
     project_year: String(currentYear),
@@ -72,10 +73,17 @@ function CreateProject() {
 
     try {
       setSubmitting(true)
+      const fullName = form.project_name.trim()
+      const yearTwoDigits = String(form.project_year).replace(/\D/g, '').slice(-2)
+      const semesterChar = form.project_semester === 'SPRING' ? 'S' : 'F'
+      // Potentially fix semesterchar to have - after
+      const storedProjectName = `${semesterChar}${yearTwoDigits}-${fullName}`
+
       await createProject({
-        project_name: form.project_name.trim(),
+        project_name: storedProjectName,
         project_semester: form.project_semester,
         project_sponsor: form.project_sponsor.trim(),
+        sponsor_number: form.sponsor_number.trim() || null,
         project_advisor: Number.parseInt(form.project_advisor, 10),
         project_description: form.project_description.trim(),
         project_year: Number.parseInt(form.project_year, 10),
@@ -117,6 +125,17 @@ function CreateProject() {
           <label>
             Sponsor
             <input name="project_sponsor" value={form.project_sponsor} onChange={onChange} required />
+          </label>
+
+          <label>
+            Sponsor Number
+            <input
+              name="sponsor_number"
+              value={form.sponsor_number}
+              onChange={onChange}
+              maxLength={25}
+              placeholder="Optional"
+            />
           </label>
 
           <label>
