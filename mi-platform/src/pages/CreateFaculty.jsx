@@ -1,14 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { registerAdmin } from '../services/projectService'
-import './CreateAdmin.css'
+import { registerFaculty } from '../services/projectService'
+import './CreateFaculty.css'
 
-const ROLE_OPTIONS = [
-  { value: 0, label: 'Admin' },
-  { value: 1, label: 'Faculty' },
-]
-
-function CreateAdmin() {
+function CreateFaculty() {
   const navigate = useNavigate()
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
@@ -19,14 +14,13 @@ function CreateAdmin() {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 0,
   })
 
   const onChange = (e) => {
     const { name, value } = e.target
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
-      [name]: name === 'role' ? Number(value) : value,
+      [name]: value,
     }))
   }
 
@@ -52,14 +46,14 @@ function CreateAdmin() {
 
     try {
       setSubmitting(true)
-      await registerAdmin({
+      await registerFaculty({
         username: form.username.trim(),
         email: form.email.trim(),
         password: form.password,
-        role: form.role,
+        role: 1,
       })
       setSuccess(`Account created for ${form.email.trim()}`)
-      setForm({ username: '', email: '', password: '', confirmPassword: '', role: 0 })
+      setForm({ username: '', email: '', password: '', confirmPassword: '' })
     } catch (err) {
       setSubmitError(err.message || 'Failed to create account.')
     } finally {
@@ -72,12 +66,12 @@ function CreateAdmin() {
       <nav className="cadmin-breadcrumb">
         <button className="cadmin-breadcrumb-link" onClick={() => navigate('/dashboard')}>Dashboard</button>
         <span className="cadmin-breadcrumb-sep">/</span>
-        <span className="cadmin-breadcrumb-current">Create Admin</span>
+        <span className="cadmin-breadcrumb-current">Create Faculty</span>
       </nav>
 
       <div className="cadmin-header">
-        <h1 className="cadmin-title">Create Admin Account</h1>
-        <p className="cadmin-subtitle">Register a new administrator or faculty observer in the system.</p>
+        <h1 className="cadmin-title">Create Faculty Account</h1>
+        <p className="cadmin-subtitle">Register a new faculty observer in the system.</p>
       </div>
 
       <div className="cadmin-card">
@@ -90,7 +84,7 @@ function CreateAdmin() {
                 name="username"
                 value={form.username}
                 onChange={onChange}
-                placeholder="jsmith"
+                placeholder="username"
                 autoComplete="off"
                 required
               />
@@ -103,7 +97,7 @@ function CreateAdmin() {
                 type="email"
                 value={form.email}
                 onChange={onChange}
-                placeholder="jsmith@kennesaw.edu"
+                placeholder="email@kennesaw.edu"
                 autoComplete="off"
                 required
               />
@@ -139,15 +133,6 @@ function CreateAdmin() {
             </div>
           </div>
 
-          <div className="cadmin-field cadmin-field--narrow">
-            <label htmlFor="ca-role">Role</label>
-            <select id="ca-role" name="role" value={form.role} onChange={onChange} required>
-              {ROLE_OPTIONS.map(r => (
-                <option key={r.value} value={r.value}>{r.label}</option>
-              ))}
-            </select>
-          </div>
-
           {submitError && <div className="cadmin-error">{submitError}</div>}
           {success && <div className="cadmin-success">{success}</div>}
 
@@ -165,4 +150,4 @@ function CreateAdmin() {
   )
 }
 
-export default CreateAdmin
+export default CreateFaculty

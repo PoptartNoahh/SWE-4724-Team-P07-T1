@@ -16,13 +16,25 @@ import Dashboard from './pages/dashboard'
 import Project from './pages/Project'
 import Report from './pages/Report'
 import CreateProject from './pages/CreateProject'
-import CreateAdmin from './pages/CreateAdmin'
+import CreateFaculty from './pages/CreateFaculty'
 import EventLog from './pages/EventLog'
 import { getCurrentUser, logout, isAuthenticated } from './services/authService'
 
 function ProtectedRoute({ children }) {
   if (!isAuthenticated()) {
     return <Navigate to="/login" replace />
+  }
+  return children
+}
+
+function AdminOnlyRoute({ children }) {
+  if (!isAuthenticated()) {
+    return <Navigate to="/login" replace />
+  }
+  const user = getCurrentUser()
+  const role = user?.role != null ? String(user.role) : ''
+  if (role !== '0') {
+    return <Navigate to="/dashboard" replace />
   }
   return children
 }
@@ -49,6 +61,7 @@ function TopBar() {
 
   const displayName = sessionUser?.fullName ?? sessionUser?.name ?? 'User'
   const displayRole = sessionUser?.role ?? ''
+  const isAdmin = String(sessionUser?.role ?? '') === '0'
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -85,18 +98,22 @@ function TopBar() {
               >
                 Dashboard
               </NavLink>
-              <NavLink
-                to="/admin/new"
-                className={({ isActive }) => `app-navlink ${isActive ? 'is-active' : ''}`}
-              >
-                Add Admin
-              </NavLink>
-              <NavLink
-                to="/events"
-                className={({ isActive }) => `app-navlink ${isActive ? 'is-active' : ''}`}
-              >
-                Event Log
-              </NavLink>
+              {isAdmin && (
+                <>
+                  <NavLink
+                    to="/faculty/new"
+                    className={({ isActive }) => `app-navlink ${isActive ? 'is-active' : ''}`}
+                  >
+                    Add Faculty
+                  </NavLink>
+                  <NavLink
+                    to="/events"
+                    className={({ isActive }) => `app-navlink ${isActive ? 'is-active' : ''}`}
+                  >
+                    Event Log
+                  </NavLink>
+                </>
+              )}
             </nav>
           )}
         </div>
@@ -171,19 +188,19 @@ function NavBar() {
                 )}
               />
               <Route
-                path="/admin/new"
+                path="/faculty/new"
                 element={(
-                  <ProtectedRoute>
-                    <CreateAdmin />
-                  </ProtectedRoute>
+                  <AdminOnlyRoute>
+                    <CreateFaculty />
+                  </AdminOnlyRoute>
                 )}
               />
               <Route
                 path="/events"
                 element={(
-                  <ProtectedRoute>
+                  <AdminOnlyRoute>
                     <EventLog />
-                  </ProtectedRoute>
+                  </AdminOnlyRoute>
                 )}
               />
               <Route

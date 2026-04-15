@@ -97,7 +97,7 @@ export async function emailReport(reportId) {
   }
 }
 
-export async function registerAdmin({ username, email, password, role }) {
+export async function registerFaculty({ username, email, password, role }) {
   return await fetchJson('/api/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
