@@ -31,8 +31,8 @@ def main() -> None:
             "TrustServerCertificate=yes;"
         )
 
-    username = "tadmin"
-    email = "tadmin@kennesaw.edu"
+    username = "ccrose1"
+    email = "ccrose1@students.kennesaw.edu"
     password = "Password_1"
     role = 1
 

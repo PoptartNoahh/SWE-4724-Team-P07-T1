@@ -352,6 +352,7 @@ class CreateProjectRequest(BaseModel):
     project_name: str
     project_semester: str
     project_sponsor: str
+    sponsor_number: Optional[str] = None
     project_advisor: int
     project_description: str
     project_year: int
@@ -909,37 +910,43 @@ def create_project(payload: CreateProjectRequest) -> Dict[str, Any]:
         project_columns = set(_get_table_column_names(cursor, projects_table))
         project_path = f"{project_year}/{project_semester.lower()}/{_slugify_project_name(project_name)}"
 
+        insert_cols = [
+            "project_name",
+            "project_semester",
+            "project_sponsor",
+            "project_advisor",
+            "project_description",
+            "project_year",
+        ]
+        insert_vals: List[Any] = [
+            project_name,
+            project_semester,
+            payload.project_sponsor.strip(),
+            payload.project_advisor,
+            payload.project_description.strip(),
+            project_year,
+        ]
+
+        if "sponsor_number" in project_columns:
+            insert_cols.append("sponsor_number")
+            sponsor_number = payload.sponsor_number.strip() if payload.sponsor_number else None
+            insert_vals.append(sponsor_number)
+
         if "project_path" in project_columns:
-            cursor.execute(
-                f"""
-                INSERT INTO {projects_table}
-                    (project_name, project_semester, project_sponsor, project_advisor, project_description, project_year, project_path)
-                OUTPUT INSERTED.project_id
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                """,
-                project_name,
-                project_semester,
-                payload.project_sponsor.strip(),
-                payload.project_advisor,
-                payload.project_description.strip(),
-                project_year,
-                project_path,
-            )
-        else:
-            cursor.execute(
-                f"""
-                INSERT INTO {projects_table}
-                    (project_name, project_semester, project_sponsor, project_advisor, project_description, project_year)
-                OUTPUT INSERTED.project_id
-                VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                project_name,
-                project_semester,
-                payload.project_sponsor.strip(),
-                payload.project_advisor,
-                payload.project_description.strip(),
-                project_year,
-            )
+            insert_cols.append("project_path")
+            insert_vals.append(project_path)
+
+        placeholders = ", ".join(["?"] * len(insert_cols))
+        col_sql = ", ".join(insert_cols)
+        cursor.execute(
+            f"""
+            INSERT INTO {projects_table}
+                ({col_sql})
+            OUTPUT INSERTED.project_id
+            VALUES ({placeholders})
+            """,
+            *insert_vals,
+        )
         inserted = cursor.fetchone()
         conn.commit()
         project_id = int(inserted[0]) if inserted else None
