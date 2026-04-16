@@ -3,7 +3,7 @@ name: Build and deploy (FastAPI + React) to Azure Web App - CCSE-MIP
 on:
   push:
     branches:
-      - deployment
+      - main
   workflow_dispatch:
 
 jobs:
