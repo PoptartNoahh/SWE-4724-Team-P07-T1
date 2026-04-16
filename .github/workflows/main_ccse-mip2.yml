@@ -1,0 +1,89 @@
+name: Build and deploy (FastAPI + React) to Azure Web App - CCSE-MIP
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-package:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read #This is required for actions/checkout
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: "mi-platform/package-lock.json"
+
+      - name: Install frontend deps
+        working-directory: mi-platform
+        run: npm ci
+
+      - name: Build frontend (use same-origin API)
+        working-directory: mi-platform
+        env:
+          VITE_API_BASE_URL: ""
+        run: npm run build
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate backend dependencies install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Package app for deployment
+        run: |
+          rm -rf deploy
+          mkdir -p deploy
+          cp -R backend deploy/backend
+          mkdir -p deploy/mi-platform
+          cp -R mi-platform/dist deploy/mi-platform/dist
+          cp requirements.txt deploy/requirements.txt
+          cd deploy
+          zip -r ../app.zip .
+
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v4
+        with:
+          name: app
+          path: app.zip
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-package
+    permissions:
+      id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
+
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: app
+      
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_85F3331ACB904CC29D6DD89DBF564D8E  }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_6AF0D7C968D5463DBA7E6EEC84FC5A15  }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_176229BD58F84A719B06CCFE0BBD695C  }}
+
+      - name: Deploy to Azure Web App
+        id: deploy-to-webapp
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'CCSE-MIP2'
+          slot-name: 'Production'
+          package: app.zip
+          
