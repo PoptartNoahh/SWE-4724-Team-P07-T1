@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - deployment
-      - development
   workflow_dispatch:
 
 jobs:
@@ -48,6 +47,7 @@ jobs:
           rm -rf deploy
           mkdir -p deploy
           cp -R backend deploy/backend
+          mkdir -p deploy/mi-platform
           cp -R mi-platform/dist deploy/mi-platform/dist
           cp requirements.txt deploy/requirements.txt
           cd deploy
