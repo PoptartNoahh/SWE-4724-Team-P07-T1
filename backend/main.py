@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import FileResponse, PlainTextResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 import os
@@ -19,6 +20,13 @@ logger = logging.getLogger("mi_platform_api")
 
 BACKEND_DIR = Path(__file__).resolve().parent
 load_dotenv(BACKEND_DIR / ".env")
+
+FRONTEND_DIST_DIR = (BACKEND_DIR.parent / "mi-platform" / "dist").resolve()
+FRONTEND_INDEX = FRONTEND_DIST_DIR / "index.html"
+FRONTEND_ASSETS_DIR = FRONTEND_DIST_DIR / "assets"
+
+if FRONTEND_ASSETS_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=str(FRONTEND_ASSETS_DIR)), name="assets")
 
 
 
@@ -830,6 +838,13 @@ def ping() -> str:
     return "hey it works!"
 
 
+@app.get("/", include_in_schema=False)
+def serve_frontend_root():
+    if FRONTEND_INDEX.exists():
+        return FileResponse(str(FRONTEND_INDEX))
+    raise HTTPException(status_code=404, detail="Frontend build not found")
+
+
 
 
 
@@ -1285,3 +1300,13 @@ def login_user(payload: LoginRequest):
             "role": role,
         },
     }
+
+
+@app.get("/{full_path:path}", include_in_schema=False)
+def serve_frontend_spa(full_path: str):
+    # Keep API routes as API (don't try to serve React for them).
+    if full_path.startswith("api/") or full_path == "api":
+        raise HTTPException(status_code=404, detail="Not found")
+    if FRONTEND_INDEX.exists():
+        return FileResponse(str(FRONTEND_INDEX))
+    raise HTTPException(status_code=404, detail="Frontend build not found")
