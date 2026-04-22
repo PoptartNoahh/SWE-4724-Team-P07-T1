@@ -51,6 +51,33 @@
   margin-bottom: 8px;
 }
 
+.proj-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.proj-settings-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  background: none;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ms-blue);
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+  white-space: nowrap;
+}
+
+.proj-settings-btn:hover {
+  background: var(--surface-secondary);
+  border-color: var(--ms-blue);
+}
+
 .proj-title {
   font-size: 22px;
   font-weight: 700;

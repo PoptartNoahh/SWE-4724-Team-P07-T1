@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
@@ -36,20 +36,29 @@ def get_db_connection():
             "pyodbc is not installed in the active Python environment. "
             "Start the backend from your project virtualenv or install pyodbc."
         )
-    return pyodbc.connect(
-        "DRIVER={ODBC Driver 18 for SQL Server};"
-        f"SERVER={os.getenv('DB_SERVER')};"
-        f"DATABASE={os.getenv('DB_NAME')};"
-        f"UID={os.getenv('DB_USER')};"
-        f"PWD={os.getenv('DB_PASSWORD')};"
-        "Encrypt=yes;"
-        "TrustServerCertificate=yes;"
-    )
+    try:
+        return pyodbc.connect(
+            "DRIVER={ODBC Driver 18 for SQL Server};"
+            f"SERVER={os.getenv('DB_SERVER')};"
+            f"DATABASE={os.getenv('DB_NAME')};"
+            f"UID={os.getenv('DB_USER')};"
+            f"PWD={os.getenv('DB_PASSWORD')};"
+            "Encrypt=yes;"
+            "TrustServerCertificate=yes;"
+        )
+    except Exception as exc:
+        msg = str(exc)
+        if "40615" in msg or "is not allowed to access the server" in msg.lower():
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "Database connection blocked by Azure SQL firewall. "
+                    "Allow your current public IP in the Azure SQL Server networking/firewall rules, "
+                    "then retry (it can take a few minutes to apply)."
+                ),
+            )
+        raise
 
-# Test and Development: uvicorn backend.main:app --reload --port 8000
-# .\.venv\Scripts\python.exe -m uvicorn backend.main:app --reload --port 8000
-
-# TODO: lock this down to specific origins in production.
 origins_env = os.getenv("CORS_ALLOW_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173, http://localhost:5174, http://127.0.0.1:5174")
 origins = [o.strip() for o in origins_env.split(",") if o.strip()]
 app.add_middleware(
@@ -61,20 +70,11 @@ app.add_middleware(
 )
 
 
-# -----------------------------
-# Mock data (in-memory)
-# -----------------------------
-# These are stand-ins for Azure DB calls. They let the frontend integrate end-to-end
-# while the database layer is being built.
-# TODO (Azure DB): Replace these with calls to your Azure database and/or services.
 projects: Dict[str, Dict[str, Any]] = {
     "1": {"id": 1, "title": "Team Alpha Capstone", "latestMeetingAt": "2026-03-10T14:00:00Z"},
     "2": {"id": 2, "title": "Team Beta Capstone", "latestMeetingAt": "2026-03-08T10:30:00Z"},
 }
 
-# Dashboard project listing (mock)
-# NOTE: `path` is intentionally shaped like your OneDrive-style reference: `YYYY/term/name`.
-# TODO (Azure DB): Replace this list with an Azure DB query that returns all visible projects.
 dashboard_projects: List[Dict[str, Any]] = [
     {"id": 1, "path": "2026/spring/team-alpha-capstone", "name": "Team Alpha Capstone"},
     {"id": 2, "path": "2026/spring/team-beta-capstone", "name": "Team Beta Capstone"},
@@ -106,6 +106,71 @@ def _resolve_projects_table(cursor: Any) -> Optional[str]:
     if not row:
         return None
     return f"[{row.TABLE_SCHEMA}].[{row.TABLE_NAME}]"
+
+
+def _resolve_auditlog_table(cursor: Any) -> Optional[str]:
+    cursor.execute(
+        """
+        SELECT TABLE_SCHEMA, TABLE_NAME
+        FROM INFORMATION_SCHEMA.TABLES
+        WHERE TABLE_TYPE = 'BASE TABLE'
+          AND LOWER(TABLE_NAME) IN ('auditlog', 'audit_log')
+        ORDER BY CASE WHEN TABLE_SCHEMA = 'dbo' THEN 0 ELSE 1 END, TABLE_NAME
+        """
+    )
+    row = cursor.fetchone()
+    if not row:
+        return None
+    return f"[{row.TABLE_SCHEMA}].[{row.TABLE_NAME}]"
+
+
+def _audit_trunc(val: Any, max_len: int = 50) -> str:
+    if val is None:
+        return ""
+    s = str(val)
+    s = " ".join(s.split())
+    if len(s) <= max_len:
+        return s
+    return s[: max_len - 1] + "…"
+
+
+def _write_audit_log_rows(
+    cursor: Any,
+    *,
+    user_id: Optional[int],
+    action_type: str,
+    entity_id: Optional[int],
+    entity_name: str,
+    changes: List[Tuple[str, Any, Any]],
+) -> None:
+    """
+    Write one AuditLog row per changed column.
+      - action_type: "create" | "update"
+      - entity_id: primary key of the row being changed (e.g. project_id)
+      - entity_name: table name (e.g. "project")
+      - entity_type: column name
+      - entity_before / entity_after: truncated to 50 chars (per table schema)
+    """
+    audit_table = _resolve_auditlog_table(cursor)
+    if not audit_table:
+        return
+
+    for (entity_type, before, after) in changes:
+        cursor.execute(
+            f"""
+            INSERT INTO {audit_table}
+                (action_type, entity_id, entity_name, entity_type, entity_before, entity_after, user_id)
+            VALUES
+                (?, ?, ?, ?, ?, ?, ?)
+            """,
+            str(action_type).strip().lower(),
+            entity_id,
+            str(entity_name),
+            str(entity_type),
+            _audit_trunc(before),
+            _audit_trunc(after),
+            user_id,
+        )
 
 
 def get_projects_from_db() -> List[Dict[str, Any]]:
@@ -348,7 +413,6 @@ class RegisterRequest(BaseModel):
     username: str
     email: str
     password: str
-    # Matches the DB column `user_role` (the frontend/test is expected to provide it).
     role: int = 0
 
 class LoginRequest(BaseModel):
@@ -364,6 +428,16 @@ class CreateProjectRequest(BaseModel):
     project_advisor: int
     project_description: str
     project_year: int
+
+
+class UpdateProjectRequest(BaseModel):
+    project_name: str
+    project_year: int
+    project_semester: str
+    project_sponsor_name: str
+    sponsor_number: str
+    project_description: str
+    project_advisor: int
 
 
 def _resolve_users_table(cursor: Any) -> Optional[str]:
@@ -538,7 +612,6 @@ def _fetch_risks_for_report(cursor: Any, report_id: str) -> Tuple[List[Dict[str,
     conf_col = "confidence_score" if "confidence_score" in cols else None
     status_col = "status" if "status" in cols else None
 
-    # Optional FK to generic RiskTable
     fk_to_generic = None
     for cand in ("risk_table_id", "generic_risk_id", "risktable_id"):
         if cand in cols:
@@ -754,7 +827,6 @@ def get_project_reports_from_db(project_id: int) -> List[Dict[str, Any]]:
 
         select_aliases = [f"r.[{report_id_col}] AS report_id"]
 
-        # Prefer report_risk_score (Azure schema) then generic risk_score
         rs_col = _first_present_column(columns, ("report_risk_score", "risk_score"))
         rl_col = _first_present_column(columns, ("risk_level",)) if rs_col is None else None
         if rs_col:
@@ -867,7 +939,6 @@ def list_projects() -> List[Dict[str, Any]]:
     except Exception as exc:
         logger.exception("[projects] database error while loading projects")
         message = str(exc)
-        # Azure SQL transient outage / unavailable DB.
         if "40613" in message or "not currently available" in message.lower():
             raise HTTPException(
                 status_code=503,
@@ -888,7 +959,10 @@ def list_advisors() -> List[Dict[str, Any]]:
 
 
 @app.post("/api/projects")
-def create_project(payload: CreateProjectRequest) -> Dict[str, Any]:
+def create_project(
+    payload: CreateProjectRequest,
+    x_user_id: Optional[int] = Header(default=None, alias="X-User-Id"),
+) -> Dict[str, Any]:
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
@@ -900,7 +974,6 @@ def create_project(payload: CreateProjectRequest) -> Dict[str, Any]:
         project_semester = payload.project_semester.strip().upper()
         project_year = int(payload.project_year)
 
-        # Prevent duplicates for the same project name + semester + year.
         cursor.execute(
             f"""
             SELECT 1
@@ -963,8 +1036,23 @@ def create_project(payload: CreateProjectRequest) -> Dict[str, Any]:
             *insert_vals,
         )
         inserted = cursor.fetchone()
-        conn.commit()
         project_id = int(inserted[0]) if inserted else None
+
+        create_changes: List[Tuple[str, Any, Any]] = []
+        for i, col in enumerate(insert_cols):
+            before = ""
+            after = insert_vals[i] if i < len(insert_vals) else ""
+            create_changes.append((col, before, after))
+        _write_audit_log_rows(
+            cursor,
+            user_id=x_user_id,
+            action_type="create",
+            entity_id=project_id,
+            entity_name="project",
+            changes=create_changes,
+        )
+
+        conn.commit()
         return {"message": "Project Created", "project_id": project_id}
     except HTTPException:
         conn.rollback()
@@ -1037,9 +1125,179 @@ def get_project(project_id: str) -> Dict[str, Any]:
         conn.close()
 
 
+@app.get("/api/projects/{project_id}/settings")
+def get_project_settings(project_id: str) -> Dict[str, Any]:
+    try:
+        pid = int(project_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid project id")
+
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        projects_table = _resolve_projects_table(cursor)
+        if not projects_table:
+            raise RuntimeError("Could not find a 'Project'/'Projects' table in the current database.")
+
+        cols = set(_get_table_column_names(cursor, projects_table))
+        required = {"project_id", "project_name", "project_semester", "project_year", "project_advisor", "project_description"}
+        missing = [c for c in required if c not in cols]
+        if missing:
+            raise RuntimeError(f"Projects table missing required columns: {', '.join(sorted(missing))}")
+
+        sponsor_name_col = "project_sponsor" if "project_sponsor" in cols else None
+        sponsor_number_col = "sponsor_number" if "sponsor_number" in cols else None
+
+        select_cols = [
+            "project_id",
+            "project_name",
+            "project_semester",
+            "project_year",
+            "project_advisor",
+            "project_description",
+        ]
+        if sponsor_name_col:
+            select_cols.append(sponsor_name_col)
+        if sponsor_number_col:
+            select_cols.append(sponsor_number_col)
+
+        select_sql = ", ".join([f"[{c}]" for c in select_cols])
+        cursor.execute(
+            f"SELECT {select_sql} FROM {projects_table} WHERE [project_id] = ?",
+            pid,
+        )
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        row_dict = dict(zip(select_cols, row))
+        return {
+            "id": int(row_dict.get("project_id")),
+            "project_name": str(row_dict.get("project_name") or "").strip(),
+            "project_semester": str(row_dict.get("project_semester") or "").strip(),
+            "project_year": int(row_dict.get("project_year")),
+            "project_sponsor_name": str(row_dict.get(sponsor_name_col) or "").strip() if sponsor_name_col else "",
+            "sponsor_number": str(row_dict.get(sponsor_number_col) or "").strip() if sponsor_number_col else "",
+            "project_description": str(row_dict.get("project_description") or "").strip(),
+            "project_advisor": int(row_dict.get("project_advisor")),
+        }
+    finally:
+        conn.close()
+
+
+@app.put("/api/projects/{project_id}")
+def update_project(
+    project_id: str,
+    payload: UpdateProjectRequest,
+    x_user_id: Optional[int] = Header(default=None, alias="X-User-Id"),
+) -> Dict[str, Any]:
+    try:
+        pid = int(project_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid project id")
+
+    name = str(payload.project_name or "").strip()
+    desc = str(payload.project_description or "").strip()
+    sponsor_name = str(payload.project_sponsor_name or "").strip()
+    sponsor_number = str(payload.sponsor_number or "").strip()
+    semester = str(payload.project_semester or "").strip().upper()
+
+    if not name:
+        raise HTTPException(status_code=400, detail="Project name is required")
+    if len(name) > 500:
+        raise HTTPException(status_code=400, detail="Project name must be <= 500 characters")
+    if not desc:
+        raise HTTPException(status_code=400, detail="Project description is required")
+    if len(desc) > 500:
+        raise HTTPException(status_code=400, detail="Project description must be <= 500 characters")
+    if not sponsor_name:
+        raise HTTPException(status_code=400, detail="Sponsor name is required")
+    if not sponsor_number:
+        raise HTTPException(status_code=400, detail="Sponsor phone number is required")
+    if len(sponsor_number) > 25:
+        raise HTTPException(status_code=400, detail="Sponsor phone number must be <= 25 characters")
+    if semester not in ("SPRING", "SUMMER", "FALL", "WINTER"):
+        raise HTTPException(status_code=400, detail="Semester must be one of: SPRING, SUMMER, FALL, WINTER")
+
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        projects_table = _resolve_projects_table(cursor)
+        if not projects_table:
+            raise RuntimeError("Could not find a 'Project'/'Projects' table in the current database.")
+
+        cols = set(_get_table_column_names(cursor, projects_table))
+        update_pairs: List[Tuple[str, Any]] = [
+            ("project_name", name),
+            ("project_year", int(payload.project_year)),
+            ("project_semester", semester),
+            ("project_description", desc),
+            ("project_advisor", int(payload.project_advisor)),
+        ]
+
+        if "project_sponsor" in cols:
+            update_pairs.append(("project_sponsor", sponsor_name))
+
+        if "sponsor_number" in cols:
+            update_pairs.append(("sponsor_number", sponsor_number))
+
+        update_pairs = [(c, v) for (c, v) in update_pairs if c in cols]
+        if not update_pairs:
+            raise RuntimeError("No updatable columns were found on the Projects table.")
+
+        current_cols = [c for (c, _v) in update_pairs]
+        select_sql = ", ".join([f"[{c}]" for c in current_cols])
+        cursor.execute(
+            f"SELECT {select_sql} FROM {projects_table} WHERE [project_id] = ?",
+            pid,
+        )
+        existing = cursor.fetchone()
+        if not existing:
+            conn.rollback()
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        before_map = dict(zip(current_cols, list(existing)))
+        change_rows: List[Tuple[str, Any, Any]] = []
+        for (c, new_val) in update_pairs:
+            old_val = before_map.get(c)
+            if str(old_val) != str(new_val):
+                change_rows.append((c, old_val, new_val))
+
+        set_sql = ", ".join([f"[{c}] = ?" for (c, _v) in update_pairs])
+        values = [v for (_c, v) in update_pairs]
+        values.append(pid)
+
+        cursor.execute(
+            f"UPDATE {projects_table} SET {set_sql} WHERE [project_id] = ?",
+            *values,
+        )
+        if cursor.rowcount == 0:
+            conn.rollback()
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        if change_rows:
+            _write_audit_log_rows(
+                cursor,
+                user_id=x_user_id,
+                action_type="update",
+                entity_id=pid,
+                entity_name="project",
+                changes=change_rows,
+            )
+
+        conn.commit()
+        return {"message": "Project updated", "project_id": pid}
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception as exc:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error while updating project: {exc}")
+    finally:
+        conn.close()
+
 @app.get("/api/projects/{project_id}/meetings")
 def get_project_meetings(project_id: str) -> List[Dict[str, Any]]:
-    # TODO (Azure DB): Replace in-memory lookup with Azure DB query.
     return meetings.get(project_id, [])
 
 
@@ -1111,7 +1369,6 @@ def get_report(report_id: str) -> Dict[str, Any]:
 
         row = cursor.fetchone()
         if not row:
-            # Legacy fallback for existing mock IDs like rpt-001
             report: Optional[Dict[str, Any]] = reports.get(report_id)
             if report:
                 return report
@@ -1233,7 +1490,6 @@ def update_flag_status(flag_id: str, payload: FlagUpdateRequest) -> Dict[str, An
 
 @app.post("/api/reports/{report_id}/email")
 def email_report(report_id: str) -> Dict[str, Any]:
-    # Potential email service usage:
     _ = report_id
     return {"success": True}
 
@@ -1269,42 +1525,59 @@ def login_user(payload: LoginRequest):
         raise HTTPException(status_code=400, detail="Email is required")
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    try:
+        cursor = conn.cursor()
 
-    cursor.execute(
-        """
-        SELECT user_id, user_name, user_email, user_password, user_role
-        FROM Users
-        WHERE LOWER(LTRIM(RTRIM(user_email))) = LOWER(LTRIM(RTRIM(?)))
-        """,
-        email,
-    )
+        cursor.execute(
+            """
+            SELECT user_id, user_name, user_email, user_password, user_role
+            FROM Users
+            WHERE LOWER(LTRIM(RTRIM(user_email))) = LOWER(LTRIM(RTRIM(?)))
+            """,
+            email,
+        )
 
-    row = cursor.fetchone()
-    conn.close()
+        row = cursor.fetchone()
 
-    if not row:
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+        if not row:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    user_id, user_name, user_email, stored_hash, role = row
+        user_id, user_name, user_email, stored_hash, role = row
 
-    if not verify_password(payload.password, stored_hash):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+        if not verify_password(payload.password, stored_hash):
+            raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    return {
-        "message": "Login successful",
-        "user": {
-            "id": int(user_id),
-            "name": str(user_name or "").strip(),
-            "email": str(user_email or "").strip(),
-            "role": role,
-        },
-    }
+        cursor.execute(
+            """
+            UPDATE Users
+            SET last_login = SYSUTCDATETIME()
+            WHERE user_id = ?
+            """,
+            int(user_id),
+        )
+        conn.commit()
+
+        return {
+            "message": "Login successful",
+            "user": {
+                "id": int(user_id),
+                "name": str(user_name or "").strip(),
+                "email": str(user_email or "").strip(),
+                "role": role,
+            },
+        }
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
 @app.get("/{full_path:path}", include_in_schema=False)
 def serve_frontend_spa(full_path: str):
-    # Keep API routes as API (don't try to serve React for them).
     if full_path.startswith("api/") or full_path == "api":
         raise HTTPException(status_code=404, detail="Not found")
     if FRONTEND_INDEX.exists():

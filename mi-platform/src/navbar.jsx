@@ -14,6 +14,7 @@ import Layout from './Layout'
 import LoginPage from './pages/loginPage'
 import Dashboard from './pages/dashboard'
 import Project from './pages/Project'
+import ProjectSettings from './pages/ProjectSettings'
 import Report from './pages/Report'
 import CreateProject from './pages/CreateProject'
 import { getCurrentUser, logout, isAuthenticated } from './services/authService'
@@ -90,12 +91,14 @@ function TopBar() {
         <div className="app-topbar-right" ref={menuRef}>
           {!isAuthRoute && (
             <>
+              {/* 
+              Removed notifcation icon due to lack of functionality
               <button className="icon-btn" type="button" aria-label="Notifications">
                 <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path d="M10 2a5 5 0 0 0-5 5v3l-1.5 2.5h13L15 10V7a5 5 0 0 0-5-5z" />
                   <path d="M8 16a2 2 0 1 0 4 0" />
                 </svg>
-              </button>
+              </button> */}
               <button className="user-btn" type="button" onClick={() => setMenuOpen((o) => !o)}>
                 <span className="user-avatar">{displayName.charAt(0)}</span>
                 <span className="user-meta">
@@ -161,6 +164,14 @@ function NavBar() {
                 element={(
                   <ProtectedRoute>
                     <Project />
+                  </ProtectedRoute>
+                )}
+              />
+              <Route
+                path="/projects/:projectId/settings"
+                element={(
+                  <ProtectedRoute>
+                    <ProjectSettings />
                   </ProtectedRoute>
                 )}
               />

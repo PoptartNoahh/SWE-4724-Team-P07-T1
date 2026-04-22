@@ -4,6 +4,20 @@ import { projects, meetings, reports } from './mockData.js'
 // If the backend is unreachable, they fall back to the existing mock data so the UI keeps working.
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
 
+function getSessionUserId() {
+  try {
+    const raw = sessionStorage.getItem('mi_current_user')
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    const id = parsed?.id
+    if (id == null) return null
+    const n = Number(id)
+    return Number.isFinite(n) ? String(Math.trunc(n)) : null
+  } catch {
+    return null
+  }
+}
+
 async function fetchJson(path, options) {
   const res = await fetch(`${API_BASE_URL}${path}`, options)
   if (!res.ok) {
@@ -54,10 +68,24 @@ export async function getAdvisors() {
   return await fetchJson('/api/advisors')
 }
 
+export async function getProjectSettings(projectId) {
+  return await fetchJson(`/api/projects/${projectId}/settings`)
+}
+
+export async function updateProject(projectId, payload) {
+  const uid = getSessionUserId()
+  return await fetchJson(`/api/projects/${projectId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...(uid ? { 'X-User-Id': uid } : {}) },
+    body: JSON.stringify(payload),
+  })
+}
+
 export async function createProject(payload) {
+  const uid = getSessionUserId()
   return await fetchJson('/api/projects', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(uid ? { 'X-User-Id': uid } : {}) },
     body: JSON.stringify(payload)
   })
 }
