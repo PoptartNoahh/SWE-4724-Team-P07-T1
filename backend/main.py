@@ -229,6 +229,63 @@ def get_projects_from_db() -> List[Dict[str, Any]]:
     finally:
         conn.close()
 
+
+def get_audit_log_from_db(*, limit: int = 200, offset: int = 0) -> List[Dict[str, Any]]:
+    logger.info("[audit-log] starting DB retrieval from AuditLog table")
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        audit_table = _resolve_auditlog_table(cursor)
+        if not audit_table:
+            raise RuntimeError("Could not find an 'AuditLog' table in the current database.")
+
+        safe_limit = max(1, min(int(limit), 500))
+        safe_offset = max(0, int(offset))
+
+        cursor.execute(
+            f"""
+            SELECT
+                log_id,
+                action_type,
+                entity_id,
+                entity_name,
+                entity_type,
+                entity_before,
+                entity_after,
+                created_at,
+                user_id
+            FROM {audit_table}
+            ORDER BY
+                created_at DESC,
+                log_id DESC
+            OFFSET ? ROWS
+            FETCH NEXT ? ROWS ONLY
+            """,
+            safe_offset,
+            safe_limit,
+        )
+
+        rows = cursor.fetchall()
+        logger.info("[audit-log] DB query completed; rows fetched=%s", len(rows))
+        out: List[Dict[str, Any]] = []
+        for r in rows:
+            out.append(
+                {
+                    "log_id": int(r.log_id) if r.log_id is not None else None,
+                    "action_type": str(r.action_type or ""),
+                    "entity_id": int(r.entity_id) if r.entity_id is not None else None,
+                    "entity_name": str(r.entity_name or ""),
+                    "entity_type": str(r.entity_type or ""),
+                    "entity_before": str(r.entity_before or ""),
+                    "entity_after": str(r.entity_after or ""),
+                    "created_at": r.created_at.isoformat() if getattr(r, "created_at", None) else None,
+                    "user_id": int(r.user_id) if r.user_id is not None else None,
+                }
+            )
+        return out
+    finally:
+        conn.close()
+
 def _find_dashboard_project(project_id: str) -> Optional[Dict[str, Any]]:
     try:
         pid = int(project_id)
@@ -964,6 +1021,17 @@ def list_advisors() -> List[Dict[str, Any]]:
         raise HTTPException(status_code=500, detail=f"Database error while loading advisors: {exc}")
 
 
+@app.get("/api/audit-log")
+def list_audit_log(limit: int = 200, offset: int = 0) -> List[Dict[str, Any]]:
+    try:
+        entries = get_audit_log_from_db(limit=limit, offset=offset)
+        logger.info("[audit-log] returning %s entries to client", len(entries))
+        return entries
+    except Exception as exc:
+        logger.exception("[audit-log] database error while loading audit log")
+        raise HTTPException(status_code=500, detail=f"Database error while loading audit log: {exc}")
+
+
 @app.post("/api/projects")
 def create_project(
     payload: CreateProjectRequest,
@@ -1510,17 +1578,19 @@ def register_user(
     try:
         cursor = conn.cursor()
 
+        users_table = _resolve_users_table(cursor) or "Users"
+
         username = str(payload.username or "").strip()
         email = str(payload.email or "").strip()
 
-        cursor.execute("SELECT 1 FROM USERS WHERE user_name = ?", username)
+        cursor.execute(f"SELECT 1 FROM {users_table} WHERE user_name = ?", username)
         if cursor.fetchone():
             raise HTTPException(status_code=400, detail="Username already exists")
 
         cursor.execute(
-            """
+            f"""
             SELECT 1
-            FROM Users
+            FROM {users_table}
             WHERE LOWER(LTRIM(RTRIM(user_email))) = LOWER(LTRIM(RTRIM(?)))
             """,
             email,
@@ -1531,8 +1601,9 @@ def register_user(
         hashed_pw = hash_password(payload.password)
 
         cursor.execute(
-            """
-            INSERT INTO Users (user_name, user_email, user_password, user_role)
+            f"""
+            INSERT INTO {users_table} (user_name, user_email, user_password, user_role)
+            OUTPUT INSERTED.user_id
             VALUES (?, ?, ?, ?)
             """,
             username,
@@ -1540,8 +1611,6 @@ def register_user(
             hashed_pw,
             payload.role,
         )
-
-        cursor.execute("SELECT CAST(SCOPE_IDENTITY() AS INT)")
         inserted_row = cursor.fetchone()
         created_user_id = int(inserted_row[0]) if inserted_row and inserted_row[0] is not None else None
 
@@ -1551,10 +1620,10 @@ def register_user(
                 user_id=x_user_id,
                 action_type="create",
                 entity_id=created_user_id,
-                entity_name="user",
+                entity_name="users",
                 changes=[
-                    ("user_name", "", payload.username),
-                    ("user_email", "", payload.email),
+                    ("user_name", "", username),
+                    ("user_email", "", email),
                     ("user_role", "", payload.role),
                 ],
             )

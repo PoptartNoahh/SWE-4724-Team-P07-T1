@@ -134,7 +134,6 @@ export async function registerFaculty({ username, email, password, role }) {
   })
 }
 
-// Quick connectivity check (returns plain text: "hey it works!")
 export async function pingBackend() {
   try {
     const res = await fetch(`${API_BASE_URL}/api/ping`)

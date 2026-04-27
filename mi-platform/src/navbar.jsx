@@ -18,6 +18,7 @@ import ProjectSettings from './pages/ProjectSettings'
 import Report from './pages/Report'
 import CreateProject from './pages/CreateProject'
 import CreateFaculty from './pages/CreateFaculty'
+import AuditLog from './pages/AuditLog'
 import { getCurrentUser, logout, isAuthenticated } from './services/authService'
 
 function ProtectedRoute({ children }) {
@@ -116,6 +117,14 @@ function TopBar() {
                   className={({ isActive }) => `app-navlink ${isActive ? 'is-active' : ''}`}
                 >
                   Add Faculty
+                </NavLink>
+              )}
+              {isAdmin && (
+                <NavLink
+                  to="/audit-log"
+                  className={({ isActive }) => `app-navlink ${isActive ? 'is-active' : ''}`}
+                >
+                  Audit Log
                 </NavLink>
               )}
             </nav>
@@ -223,6 +232,14 @@ function NavBar() {
                   <ProtectedRoute>
                     <Report />
                   </ProtectedRoute>
+                )}
+              />
+              <Route
+                path="/audit-log"
+                element={(
+                  <AdminOnlyRoute>
+                    <AuditLog />
+                  </AdminOnlyRoute>
                 )}
               />
             </Routes>
