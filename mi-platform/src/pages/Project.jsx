@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getProject, getProjectReports, uploadProjectFile } from '../services/projectService.js'
 import './Project.css'
+import { getCurrentUser } from '../services/authService'
 
 /** Risk score: 0 = none, 1 = low, 2 = moderate, 3 = high */
 const RISK_SCORE_META = {
@@ -34,6 +35,7 @@ function Project() {
   const [reports, setReports] = useState([])
   const [uploading, setUploading] = useState(false)
   const [uploadMsg, setUploadMsg] = useState('')
+  const isFaculty = String(getCurrentUser()?.role ?? '') === '1'
 
   useEffect(() => {
     getProject(projectId).then(setProject)
@@ -83,13 +85,15 @@ function Project() {
           )}
         </div>
         <div className="proj-header-actions">
-          <button
-            type="button"
-            className="proj-settings-btn"
-            onClick={() => navigate(`/projects/${projectId}/settings`)}
-          >
-            Settings
-          </button>
+          {!isFaculty && (
+            <button
+              type="button"
+              className="proj-settings-btn"
+              onClick={() => navigate(`/projects/${projectId}/settings`)}
+            >
+              Settings
+            </button>
+          )}
         </div>
         {/* <label className="proj-upload-btn">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6">

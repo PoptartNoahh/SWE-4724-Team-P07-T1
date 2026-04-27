@@ -125,6 +125,15 @@ export async function emailReport(reportId) {
   }
 }
 
+export async function registerFaculty({ username, email, password, role }) {
+  const uid = getSessionUserId()
+  return await fetchJson('/api/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(uid ? { 'X-User-Id': uid } : {}) },
+    body: JSON.stringify({ username, email, password, role }),
+  })
+}
+
 // Quick connectivity check (returns plain text: "hey it works!")
 export async function pingBackend() {
   try {

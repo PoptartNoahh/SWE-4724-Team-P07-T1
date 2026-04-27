@@ -17,11 +17,36 @@ import Project from './pages/Project'
 import ProjectSettings from './pages/ProjectSettings'
 import Report from './pages/Report'
 import CreateProject from './pages/CreateProject'
+import CreateFaculty from './pages/CreateFaculty'
 import { getCurrentUser, logout, isAuthenticated } from './services/authService'
 
 function ProtectedRoute({ children }) {
   if (!isAuthenticated()) {
     return <Navigate to="/login" replace />
+  }
+  return children
+}
+
+function AdminOnlyRoute({ children }) {
+  if (!isAuthenticated()) {
+    return <Navigate to="/login" replace />
+  }
+  const user = getCurrentUser()
+  const role = user?.role != null ? String(user.role) : ''
+  if (role !== '0') {
+    return <Navigate to="/dashboard" replace />
+  }
+  return children
+}
+
+function NonFacultyRoute({ children }) {
+  if (!isAuthenticated()) {
+    return <Navigate to="/login" replace />
+  }
+  const user = getCurrentUser()
+  const role = user?.role != null ? String(user.role) : ''
+  if (role === '1') {
+    return <Navigate to="/dashboard" replace />
   }
   return children
 }
@@ -48,6 +73,7 @@ function TopBar() {
 
   const displayName = sessionUser?.fullName ?? sessionUser?.name ?? 'User'
   const displayRole = sessionUser?.role ?? ''
+  const isAdmin = String(sessionUser?.role ?? '') === '0'
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -84,6 +110,14 @@ function TopBar() {
               >
                 Dashboard
               </NavLink>
+              {isAdmin && (
+                <NavLink
+                  to="/faculty/new"
+                  className={({ isActive }) => `app-navlink ${isActive ? 'is-active' : ''}`}
+                >
+                  Add Faculty
+                </NavLink>
+              )}
             </nav>
           )}
         </div>
@@ -154,9 +188,17 @@ function NavBar() {
               <Route
                 path="/projects/new"
                 element={(
-                  <ProtectedRoute>
+                  <NonFacultyRoute>
                     <CreateProject />
-                  </ProtectedRoute>
+                  </NonFacultyRoute>
+                )}
+              />
+              <Route
+                path="/faculty/new"
+                element={(
+                  <AdminOnlyRoute>
+                    <CreateFaculty />
+                  </AdminOnlyRoute>
                 )}
               />
               <Route
@@ -170,9 +212,9 @@ function NavBar() {
               <Route
                 path="/projects/:projectId/settings"
                 element={(
-                  <ProtectedRoute>
+                  <NonFacultyRoute>
                     <ProjectSettings />
-                  </ProtectedRoute>
+                  </NonFacultyRoute>
                 )}
               />
               <Route

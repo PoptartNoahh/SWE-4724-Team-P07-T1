@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getReport, updateFlagStatus, emailReport } from '../services/projectService.js'
 import './Report.css'
+import { getCurrentUser } from '../services/authService'
 
 function normalizeReportPayload(data) {
   if (!data) return null
@@ -28,6 +29,7 @@ function Report() {
   const [report, setReport] = useState(null)
   const [emailing, setEmailing] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
+  const isFaculty = String(getCurrentUser()?.role ?? '') === '1'
 
   useEffect(() => {
     getReport(reportId).then((data) => setReport(normalizeReportPayload(data)))
@@ -136,6 +138,12 @@ function Report() {
           <div className="rpt-risk-list">
             {risks.map((risk) => {
               const riskRefs = referencesForRisk(risk.id, references)
+              const riskDescription =
+                risk.risk_description ??
+                risk.riskDescription ??
+                risk.description ??
+                risk.risk_desc ??
+                ''
               return (
                 <div key={risk.id} className={`rpt-risk rpt-risk--${risk.status}`}>
                   <div className="rpt-risk-header">
@@ -152,7 +160,7 @@ function Report() {
                     <span className="rpt-risk-id-label">Risk ID</span>{' '}
                     <code className="rpt-risk-id-code">{risk.id}</code>
                   </p>
-                  <p className="rpt-risk-text">{risk.explanation}</p>
+                  <p className="rpt-risk-text">{riskDescription || risk.explanation}</p>
                   {riskRefs.length > 0 && (
                     <div className="rpt-risk-refs">
                       <div className="rpt-risk-refs-title">Transcript references (this risk)</div>
@@ -166,7 +174,7 @@ function Report() {
                       </ul>
                     </div>
                   )}
-                  {risk.status === 'pending' && (
+                  {risk.status === 'pending' && !isFaculty && (
                     <div className="rpt-risk-actions">
                       <button type="button" className="rpt-btn-confirm" onClick={() => handleConfirm(risk.id)}>
                         Confirm Risk

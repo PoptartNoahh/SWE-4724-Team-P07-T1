@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './dashboard.css'
+import { getCurrentUser } from '../services/authService'
 
 const TERM_ORDER = { spring: 1, summer: 2, fall: 3, winter: 4 }
 
@@ -31,6 +32,7 @@ function Dashboard() {
   const [selectedSemester, setSelectedSemester] = useState('all')
   const [projects, setProjects] = useState([])
   const [loadError, setLoadError] = useState('')
+  const isFaculty = String(getCurrentUser()?.role ?? '') === '1'
 
   useEffect(() => {
     let cancelled = false
@@ -118,9 +120,13 @@ function Dashboard() {
 
       <section className="dash-new">
         <h2 className="dash-section-label">New Project</h2>
-        <button type="button" className="dash-create-btn" onClick={() => navigate('/projects/new')}>
-          Create project
-        </button>
+        {isFaculty ? (
+          <p className="dash-subtitle">You have view-only access.</p>
+        ) : (
+          <button type="button" className="dash-create-btn" onClick={() => navigate('/projects/new')}>
+            Create project
+          </button>
+        )}
       </section>
 
       <section className="dash-projects">

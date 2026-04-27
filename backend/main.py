@@ -608,6 +608,7 @@ def _fetch_risks_for_report(cursor: Any, report_id: str) -> Tuple[List[Dict[str,
         return [], []
 
     flag_col = "flag_type" if "flag_type" in cols else None
+    desc_col = "risk_description" if "risk_description" in cols else None
     excerpt_col = "transcript_excerpt" if "transcript_excerpt" in cols else None
     conf_col = "confidence_score" if "confidence_score" in cols else None
     status_col = "status" if "status" in cols else None
@@ -635,6 +636,8 @@ def _fetch_risks_for_report(cursor: Any, report_id: str) -> Tuple[List[Dict[str,
     select_parts = [f"r.[{rid_col}]", f"r.[{rep_col}]"]
     if flag_col:
         select_parts.append(f"r.[{flag_col}]")
+    if desc_col:
+        select_parts.append(f"r.[{desc_col}]")
     if excerpt_col:
         select_parts.append(f"r.[{excerpt_col}]")
     if conf_col:
@@ -663,6 +666,7 @@ def _fetch_risks_for_report(cursor: Any, report_id: str) -> Tuple[List[Dict[str,
         d = {colnames[i]: row[i] for i in range(len(colnames))}
         rid = d.get("risk_id") if "risk_id" in d else d.get("id")
         flag_type = str(d.get("flag_type") or "").strip()
+        risk_description = str(d.get("risk_description") or "").strip()
         excerpt = str(d.get("transcript_excerpt") or "").strip()
         conf = d.get("confidence_score")
         status_raw = d.get("status")
@@ -703,6 +707,8 @@ def _fetch_risks_for_report(cursor: Any, report_id: str) -> Tuple[List[Dict[str,
             {
                 "id": str(rid),
                 "flagType": flag_type or "Risk",
+                "risk_description": risk_description,
+                "transcript_excerpt": excerpt,
                 "explanation": explanation,
                 "status": _normalize_risk_status_for_ui(status_raw if status_raw is not None else None),
             }
@@ -1494,27 +1500,80 @@ def email_report(report_id: str) -> Dict[str, Any]:
     return {"success": True}
 
 @app.post("/api/register")
-def register_user(payload: RegisterRequest):
+def register_user(
+    payload: RegisterRequest,
+    x_user_id: Optional[int] = Header(default=None, alias="X-User-Id"),
+):
     from backend.auth_utils import hash_password
 
     conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT 1 FROM USERS WHERE user_name = ?", payload.username)
-    if cursor.fetchone():
+    try:
+        cursor = conn.cursor()
+
+        username = str(payload.username or "").strip()
+        email = str(payload.email or "").strip()
+
+        cursor.execute("SELECT 1 FROM USERS WHERE user_name = ?", username)
+        if cursor.fetchone():
+            raise HTTPException(status_code=400, detail="Username already exists")
+
+        cursor.execute(
+            """
+            SELECT 1
+            FROM Users
+            WHERE LOWER(LTRIM(RTRIM(user_email))) = LOWER(LTRIM(RTRIM(?)))
+            """,
+            email,
+        )
+        if cursor.fetchone():
+            raise HTTPException(status_code=400, detail="Email already exists")
+
+        hashed_pw = hash_password(payload.password)
+
+        cursor.execute(
+            """
+            INSERT INTO Users (user_name, user_email, user_password, user_role)
+            VALUES (?, ?, ?, ?)
+            """,
+            username,
+            email,
+            hashed_pw,
+            payload.role,
+        )
+
+        cursor.execute("SELECT CAST(SCOPE_IDENTITY() AS INT)")
+        inserted_row = cursor.fetchone()
+        created_user_id = int(inserted_row[0]) if inserted_row and inserted_row[0] is not None else None
+
+        if created_user_id is not None:
+            _write_audit_log_rows(
+                cursor,
+                user_id=x_user_id,
+                action_type="create",
+                entity_id=created_user_id,
+                entity_name="user",
+                changes=[
+                    ("user_name", "", payload.username),
+                    ("user_email", "", payload.email),
+                    ("user_role", "", payload.role),
+                ],
+            )
+
+        conn.commit()
+        return {"message": "User Created", "user_id": created_user_id}
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception as exc:
+        conn.rollback()
+        msg = str(exc)
+        if "Cannot insert duplicate key" in msg and "UQ_Users_user_email" in msg:
+            raise HTTPException(status_code=400, detail="Email already exists")
+        if "Cannot insert duplicate key" in msg and "user_name" in msg:
+            raise HTTPException(status_code=400, detail="Username already exists")
+        raise HTTPException(status_code=500, detail=f"Database error while registering user: {exc}")
+    finally:
         conn.close()
-        raise HTTPException(status_code=400, detail="Username already exists")
-
-    hashed_pw = hash_password(payload.password)
-
-    cursor.execute("""
-        INSERT INTO Users (user_name, user_email, user_password, user_role)
-        VALUES (?, ?, ?, ?)
-    """, payload.username, payload.email, hashed_pw, payload.role)
-
-    conn.commit()
-    conn.close()
-    return {"message": "User Created"}
 
 @app.post("/api/login")
 def login_user(payload: LoginRequest):
