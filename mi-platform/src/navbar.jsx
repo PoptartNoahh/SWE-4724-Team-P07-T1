@@ -73,7 +73,9 @@ function TopBar() {
   }, [location.pathname])
 
   const displayName = sessionUser?.fullName ?? sessionUser?.name ?? 'User'
-  const displayRole = sessionUser?.role ?? ''
+  const rawRole = sessionUser?.role
+  const roleString = rawRole != null ? String(rawRole) : ''
+  const displayRole = roleString === '0' ? 'Admin' : roleString === '1' ? 'Faculty' : roleString
   const isAdmin = String(sessionUser?.role ?? '') === '0'
 
   useEffect(() => {

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './dashboard.css'
 import { getCurrentUser } from '../services/authService'
+import { formatProjectDisplayName } from '../utils/projectDisplay'
 
 const TERM_ORDER = { spring: 1, summer: 2, fall: 3, winter: 4 }
 
@@ -63,14 +64,19 @@ function Dashboard() {
     for (const p of projects) {
       const semester = semesterLabelFromPath(p.path)
       const existing = groups.get(semester) ?? { semester, projects: [] }
-      existing.projects.push({ id: p.id, name: p.name || `Project ${p.id}` })
+      const rawName = p.name || `Project ${p.id}`
+      existing.projects.push({ id: p.id, name: formatProjectDisplayName(rawName) })
       groups.set(semester, existing)
     }
     return Array.from(groups.values())
   }, [projects])
 
   const recentProjects = useMemo(
-    () => projects.slice(0, 4).map((p) => ({ id: p.id, name: p.name || `Project ${p.id}` })),
+    () =>
+      projects.slice(0, 4).map((p) => {
+        const rawName = p.name || `Project ${p.id}`
+        return { id: p.id, name: formatProjectDisplayName(rawName) }
+      }),
     [projects]
   )
 

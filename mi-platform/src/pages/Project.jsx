@@ -3,8 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { getProject, getProjectReports, uploadProjectFile } from '../services/projectService.js'
 import './Project.css'
 import { getCurrentUser } from '../services/authService'
+import { formatProjectDisplayName } from '../utils/projectDisplay'
 
-/** Risk score: 0 = none, 1 = low, 2 = moderate, 3 = high */
 const RISK_SCORE_META = {
   0: { label: 'No risk', className: 'risk--none' },
   1: { label: 'Low risk', className: 'risk--low' },
@@ -65,6 +65,8 @@ function Project() {
     return <div className="proj-loading">Loading project&hellip;</div>
   }
 
+  const displayTitle = formatProjectDisplayName(project.title)
+
   return (
     <div className="proj">
       <nav className="proj-breadcrumb">
@@ -72,12 +74,12 @@ function Project() {
           Dashboard
         </button>
         <span className="proj-breadcrumb-sep">/</span>
-        <span className="proj-breadcrumb-current">{project.title}</span>
+        <span className="proj-breadcrumb-current">{displayTitle}</span>
       </nav>
 
       <div className="proj-header">
         <div>
-          <h1 className="proj-title">{project.title}</h1>
+          <h1 className="proj-title">{displayTitle}</h1>
           {project.latestMeetingAt && (
             <p className="proj-meta">
               Latest meeting: {fmtDate(project.latestMeetingAt)} at {fmtTime(project.latestMeetingAt)}
