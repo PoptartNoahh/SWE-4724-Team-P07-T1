@@ -5,6 +5,19 @@ import './ProjectSettings.css'
 
 const SEMESTER_OPTIONS = ['SPRING', 'FALL']
 
+function stripPrefixBeforeFirstDash(name) {
+  const raw = String(name ?? '')
+  const idx = raw.indexOf('-')
+  return idx >= 0 ? raw.slice(idx + 1) : raw
+}
+
+function buildStoredProjectName({ displayName, projectYear, projectSemester }) {
+  const fullName = String(displayName ?? '').trim()
+  const yearTwoDigits = String(projectYear ?? '').replace(/\D/g, '').slice(-2)
+  const semesterChar = String(projectSemester ?? '').toUpperCase() === 'SPRING' ? 'S' : 'F'
+  return `${semesterChar}${yearTwoDigits}-${fullName}`
+}
+
 function ProjectSettings() {
   const { projectId } = useParams()
   const navigate = useNavigate()
@@ -40,7 +53,7 @@ function ProjectSettings() {
 
         setAdvisors(Array.isArray(advisorList) ? advisorList : [])
         setForm({
-          project_name: settings?.project_name ?? '',
+          project_name: stripPrefixBeforeFirstDash(settings?.project_name ?? ''),
           project_year: String(settings?.project_year ?? new Date().getFullYear()),
           project_semester: String(settings?.project_semester ?? 'FALL').toUpperCase(),
           project_sponsor_name: settings?.project_sponsor_name ?? '',
@@ -82,7 +95,13 @@ function ProjectSettings() {
     const semester = String(form.project_semester || '').toUpperCase()
 
     if (!name || !desc || !form.project_advisor) return 'Please fill out all required fields.'
-    if (name.length > 500) return 'Project name must be 500 characters or less.'
+    const storedName = buildStoredProjectName({
+      displayName: name,
+      projectYear: form.project_year,
+      projectSemester: form.project_semester,
+    })
+    if (storedName.length > 500)
+      return 'Project name must be 500 characters or less (including the semester/year prefix).'
     if (desc.length > 500) return 'Project description must be 500 characters or less.'
     if (!Number.isFinite(year) || year < 1900 || year > 3000) return 'Please enter a valid year.'
     if (!SEMESTER_OPTIONS.includes(semester)) return 'Please select a valid semester.'
@@ -103,8 +122,13 @@ function ProjectSettings() {
 
     try {
       setSaving(true)
+      const storedProjectName = buildStoredProjectName({
+        displayName: form.project_name,
+        projectYear: form.project_year,
+        projectSemester: form.project_semester,
+      })
       await updateProject(projectId, {
-        project_name: form.project_name.trim(),
+        project_name: storedProjectName,
         project_year: Number.parseInt(form.project_year, 10),
         project_semester: String(form.project_semester).toUpperCase(),
         project_sponsor_name: form.project_sponsor_name.trim(),
@@ -142,7 +166,7 @@ function ProjectSettings() {
                 name="project_name"
                 value={form.project_name}
                 onChange={onChange}
-                maxLength={500}
+                maxLength={496}
                 required
               />
               <div className="proj-settings-help">{form.project_name.length}/500</div>
