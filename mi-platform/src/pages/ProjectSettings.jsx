@@ -77,14 +77,11 @@ function ProjectSettings() {
   const validate = () => {
     const name = form.project_name.trim()
     const desc = form.project_description.trim()
-    const sponsorName = form.project_sponsor_name.trim()
     const sponsorNumber = form.sponsor_number.trim()
     const year = Number.parseInt(form.project_year, 10)
     const semester = String(form.project_semester || '').toUpperCase()
 
-    if (!name || !desc || !sponsorName || !sponsorNumber || !form.project_advisor) {
-      return 'Please fill out all fields.'
-    }
+    if (!name || !desc || !form.project_advisor) return 'Please fill out all required fields.'
     if (name.length > 500) return 'Project name must be 500 characters or less.'
     if (desc.length > 500) return 'Project description must be 500 characters or less.'
     if (!Number.isFinite(year) || year < 1900 || year > 3000) return 'Please enter a valid year.'
@@ -182,7 +179,6 @@ function ProjectSettings() {
                   name="project_sponsor_name"
                   value={form.project_sponsor_name}
                   onChange={onChange}
-                  required
                 />
               </label>
 
@@ -193,7 +189,6 @@ function ProjectSettings() {
                   value={form.sponsor_number}
                   onChange={onChange}
                   maxLength={25}
-                  required
                 />
               </label>
             </div>

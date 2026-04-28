@@ -144,6 +144,11 @@ function Report() {
                 risk.description ??
                 risk.risk_desc ??
                 ''
+              const confidence =
+                risk.confidence_score ??
+                risk.confidenceScore ??
+                risk.confidence ??
+                null
               return (
                 <div key={risk.id} className={`rpt-risk rpt-risk--${risk.status}`}>
                   <div className="rpt-risk-header">
@@ -159,6 +164,14 @@ function Report() {
                   <p className="rpt-risk-id">
                     <span className="rpt-risk-id-label">Risk ID</span>{' '}
                     <code className="rpt-risk-id-code">{risk.id}</code>
+                    {confidence != null && String(confidence).trim() !== '' && (
+                      <>
+                        <span className="rpt-risk-id-sep">{' '}&middot;{' '}</span>
+                        <span className="rpt-risk-confidence">
+                          Confidence: <strong>{confidence}%</strong>
+                        </span>
+                      </>
+                    )}
                   </p>
                   <p className="rpt-risk-text">{riskDescription || risk.explanation}</p>
                   {riskRefs.length > 0 && (

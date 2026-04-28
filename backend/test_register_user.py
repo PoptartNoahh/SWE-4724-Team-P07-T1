@@ -31,10 +31,10 @@ def main() -> None:
             "TrustServerCertificate=yes;"
         )
 
-    username = "ccrose1"
-    email = "ccrose1@students.kennesaw.edu"
+    username = "jsmi1518"
+    email = "jsmi1518@students.kennesaw.edu"
     password = "Password_1"
-    role = 1
+    role = 0
 
     try:
         conn = get_db_connection()

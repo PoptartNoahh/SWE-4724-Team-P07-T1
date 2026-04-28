@@ -7,6 +7,7 @@ from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
 from typing import Any, Dict, List, Optional, Tuple
+from datetime import timezone
 import re
 import logging
 from pathlib import Path
@@ -124,7 +125,7 @@ def _resolve_auditlog_table(cursor: Any) -> Optional[str]:
     return f"[{row.TABLE_SCHEMA}].[{row.TABLE_NAME}]"
 
 
-def _audit_trunc(val: Any, max_len: int = 50) -> str:
+def _audit_trunc(val: Any, max_len: int = 255) -> str:
     if val is None:
         return ""
     s = str(val)
@@ -149,7 +150,7 @@ def _write_audit_log_rows(
       - entity_id: primary key of the row being changed (e.g. project_id)
       - entity_name: table name (e.g. "project")
       - entity_type: column name
-      - entity_before / entity_after: truncated to 50 chars (per table schema)
+      - entity_before / entity_after: truncated to 255 chars (per table schema)
     """
     audit_table = _resolve_auditlog_table(cursor)
     if not audit_table:
@@ -278,7 +279,7 @@ def get_audit_log_from_db(*, limit: int = 200, offset: int = 0) -> List[Dict[str
                     "entity_type": str(r.entity_type or ""),
                     "entity_before": str(r.entity_before or ""),
                     "entity_after": str(r.entity_after or ""),
-                    "created_at": r.created_at.isoformat() if getattr(r, "created_at", None) else None,
+                    "created_at": _iso_utc_maybe(getattr(r, "created_at", None)),
                     "user_id": int(r.user_id) if r.user_id is not None else None,
                 }
             )
@@ -480,7 +481,7 @@ class LoginRequest(BaseModel):
 class CreateProjectRequest(BaseModel):
     project_name: str
     project_semester: str
-    project_sponsor: str
+    project_sponsor: Optional[str] = None
     sponsor_number: Optional[str] = None
     project_advisor: int
     project_description: str
@@ -766,6 +767,7 @@ def _fetch_risks_for_report(cursor: Any, report_id: str) -> Tuple[List[Dict[str,
                 "flagType": flag_type or "Risk",
                 "risk_description": risk_description,
                 "transcript_excerpt": excerpt,
+                "confidence_score": int(conf) if conf is not None and str(conf).strip() != "" else None,
                 "explanation": explanation,
                 "status": _normalize_risk_status_for_ui(status_raw if status_raw is not None else None),
             }
@@ -785,6 +787,7 @@ def get_advisors_from_db() -> List[Dict[str, Any]]:
             f"""
             SELECT user_id, user_name, user_email
             FROM {table_name}
+            WHERE user_role <> 0
             ORDER BY user_name ASC
             """
         )
@@ -848,6 +851,26 @@ def _iso_date_maybe(val: Any) -> Optional[str]:
     if hasattr(val, "isoformat"):
         try:
             return val.isoformat()
+        except Exception:
+            pass
+    text = str(val).strip()
+    return text or None
+
+
+def _iso_utc_maybe(val: Any) -> Optional[str]:
+    """
+    Return an ISO-8601 string with UTC offset when possible.
+    SQL Server datetimes often come back "naive" (no tzinfo); we treat them as UTC
+    so the frontend can correctly convert to local time.
+    """
+    if val is None:
+        return None
+    if hasattr(val, "isoformat"):
+        try:
+            tz = getattr(val, "tzinfo", None)
+            if tz is None:
+                return val.replace(tzinfo=timezone.utc).isoformat()
+            return val.astimezone(timezone.utc).isoformat()
         except Exception:
             pass
     text = str(val).strip()
@@ -1083,7 +1106,7 @@ def create_project(
         insert_vals: List[Any] = [
             project_name,
             project_semester,
-            payload.project_sponsor.strip(),
+            str(payload.project_sponsor or "").strip(),
             payload.project_advisor,
             payload.project_description.strip(),
             project_year,
@@ -1163,21 +1186,34 @@ def get_project(project_id: str) -> Dict[str, Any]:
             meeting_pid_col = None
             meeting_date_col = None
 
+        project_cols = set(_get_table_column_names(cursor, projects_table))
+        sponsor_name_col = "project_sponsor" if "project_sponsor" in project_cols else None
+        sponsor_number_col = "sponsor_number" if "sponsor_number" in project_cols else None
+
+        sponsor_select = ""
+        sponsor_group = ""
+        if sponsor_name_col:
+            sponsor_select += f", p.[{sponsor_name_col}] AS project_sponsor_name"
+            sponsor_group += f", p.[{sponsor_name_col}]"
+        if sponsor_number_col:
+            sponsor_select += f", p.[{sponsor_number_col}] AS sponsor_number"
+            sponsor_group += f", p.[{sponsor_number_col}]"
+
         if meetings_table and meeting_pid_col and meeting_date_col:
             cursor.execute(
                 f"""
-                SELECT p.project_id, p.project_name, MAX(m.[{meeting_date_col}]) AS latest_meeting_at
+                SELECT p.project_id, p.project_name{sponsor_select}, MAX(m.[{meeting_date_col}]) AS latest_meeting_at
                 FROM {projects_table} p
                 LEFT JOIN {meetings_table} m ON m.[{meeting_pid_col}] = p.project_id
                 WHERE p.project_id = ?
-                GROUP BY p.project_id, p.project_name
+                GROUP BY p.project_id, p.project_name{sponsor_group}
                 """,
                 pid,
             )
         else:
             cursor.execute(
                 f"""
-                SELECT project_id, project_name
+                SELECT project_id, project_name{sponsor_select.replace("p.", "")}
                 FROM {projects_table}
                 WHERE project_id = ?
                 """,
@@ -1191,6 +1227,10 @@ def get_project(project_id: str) -> Dict[str, Any]:
             "id": int(row.project_id),
             "title": str(row.project_name or f"Project {row.project_id}"),
         }
+        if hasattr(row, "project_sponsor_name"):
+            payload["project_sponsor_name"] = str(getattr(row, "project_sponsor_name") or "").strip()
+        if hasattr(row, "sponsor_number"):
+            payload["sponsor_number"] = str(getattr(row, "sponsor_number") or "").strip()
         latest = getattr(row, "latest_meeting_at", None)
         if latest is not None and hasattr(latest, "isoformat"):
             payload["latestMeetingAt"] = latest.isoformat()
@@ -1284,11 +1324,9 @@ def update_project(
         raise HTTPException(status_code=400, detail="Project description is required")
     if len(desc) > 500:
         raise HTTPException(status_code=400, detail="Project description must be <= 500 characters")
-    if not sponsor_name:
-        raise HTTPException(status_code=400, detail="Sponsor name is required")
-    if not sponsor_number:
-        raise HTTPException(status_code=400, detail="Sponsor phone number is required")
-    if len(sponsor_number) > 25:
+    if sponsor_name and len(sponsor_name) > 500:
+        raise HTTPException(status_code=400, detail="Sponsor name must be <= 500 characters")
+    if sponsor_number and len(sponsor_number) > 25:
         raise HTTPException(status_code=400, detail="Sponsor phone number must be <= 25 characters")
     if semester not in ("SPRING", "SUMMER", "FALL", "WINTER"):
         raise HTTPException(status_code=400, detail="Semester must be one of: SPRING, SUMMER, FALL, WINTER")

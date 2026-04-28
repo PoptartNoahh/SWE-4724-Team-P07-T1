@@ -66,6 +66,8 @@ function Project() {
   }
 
   const displayTitle = formatProjectDisplayName(project.title)
+  const sponsorName = (project.project_sponsor_name ?? project.projectSponsorName ?? '').trim()
+  const sponsorNumber = (project.sponsor_number ?? project.sponsorNumber ?? '').trim()
 
   return (
     <div className="proj">
@@ -80,9 +82,10 @@ function Project() {
       <div className="proj-header">
         <div>
           <h1 className="proj-title">{displayTitle}</h1>
-          {project.latestMeetingAt && (
+          {(sponsorName || sponsorNumber) && (
             <p className="proj-meta">
-              Latest meeting: {fmtDate(project.latestMeetingAt)} at {fmtTime(project.latestMeetingAt)}
+              Sponsor: {sponsorName || '—'}
+              {sponsorNumber ? ` • ${sponsorNumber}` : ''}
             </p>
           )}
         </div>

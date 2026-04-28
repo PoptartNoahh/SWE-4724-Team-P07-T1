@@ -66,8 +66,8 @@ function CreateProject() {
     e.preventDefault()
     setSubmitError('')
 
-    if (!form.project_name || !form.project_sponsor || !form.project_advisor || !form.project_description || !form.project_year) {
-      setSubmitError('Please fill out all fields.')
+    if (!form.project_name || !form.project_advisor || !form.project_description || !form.project_year) {
+      setSubmitError('Please fill out all required fields.')
       return
     }
 
@@ -76,7 +76,6 @@ function CreateProject() {
       const fullName = form.project_name.trim()
       const yearTwoDigits = String(form.project_year).replace(/\D/g, '').slice(-2)
       const semesterChar = form.project_semester === 'SPRING' ? 'S' : 'F'
-      // Potentially fix semesterchar to have - after
       const storedProjectName = `${semesterChar}${yearTwoDigits}-${fullName}`
 
       await createProject({
@@ -124,7 +123,7 @@ function CreateProject() {
 
           <label>
             Sponsor
-            <input name="project_sponsor" value={form.project_sponsor} onChange={onChange} required />
+            <input name="project_sponsor" value={form.project_sponsor} onChange={onChange} placeholder="Optional" />
           </label>
 
           <label>
