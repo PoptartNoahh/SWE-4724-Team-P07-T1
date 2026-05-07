@@ -28,7 +28,7 @@ uv venv --python 3.13.2
 # or
 py -m uv venv --python 3.13.2
 
-.\.venv\Scripts\Activate.ps1
+.\.venv\Scripts\Activate
 ```
 
 ### 2) Install dependencies
